@@ -1,0 +1,155 @@
+\clearpage
+\newcommand\nbvspace[1][3]{\vspace*{\stretch{#1}}}
+\newgeometry{left=10mm, right=10mm, top=20mm, bottom=20mm}
+\pagestyle{empty}
+
+\begin{tikzpicture}[remember picture, overlay]
+  \def\seed{20260118}
+
+  \def\frame{4mm} % {6mm}
+  \def\seg{1.2mm} % {3mm}
+  \def\amp{0.5mm} % {0.8mm}
+
+  \coordinate (NW) at (current page.north west);
+  \coordinate (SE) at (current page.south east);
+
+  \coordinate (iNW) at ($(NW)+(\frame, -\frame)$);
+  \coordinate (iSE) at ($(SE)+(-\frame, \frame)$);
+
+\path[
+  shade,
+  shading=axis,
+  shading angle=90,
+  top color=xgreen!2!white,
+  bottom color=xcovere!5!white,
+] (NW) rectangle (SE);
+
+  \path[even odd rule, fill=xgreen!50!black, opacity=0.06]
+    (NW) rectangle (SE)
+    (iNW) rectangle (iSE);
+
+\begin{scope}
+    \begin{scope}[even odd rule]
+    \clip (NW) rectangle (SE) (iNW) rectangle (iSE);
+    \end{scope}
+
+  \pgfmathsetseed{\seed}
+  \draw[
+    decorate,
+    decoration={random steps, segment length=\seg, amplitude=\amp},
+    draw=xgreen!70!black,
+    opacity=0.22,
+    line width=4.0pt,
+    line cap=round
+  ] (iNW) rectangle (iSE);
+
+  \pgfmathsetseed{\seed}
+  \draw[
+    decorate,
+    decoration={random steps, segment length=\seg, amplitude=\amp},
+    draw=xgreen!60!black,
+    opacity=0.70,
+    line width=0.9pt,
+    line join=round
+  ] (iNW) rectangle (iSE);
+\end{scope}
+\end{tikzpicture}
+
+\begin{center}
+    
+    \vspace{3.5em}
+
+    {
+        \sffamily
+        \fontsize{26pt}{32pt}\selectfont
+        \addfontfeatures{LetterSpace=2}%
+        \textcolor{xgreen!80!black}{МАТЕМАТИЧЕСКИЙ АНАЛИЗ}
+        \kern-.02em
+    }
+
+    \vspace{1.6em}
+
+    {\color{xgreen!40!black}\rule{3cm}{1.2pt}}
+
+    \vspace{1.4em}
+
+    {
+        \sffamily
+        \fontsize{20pt}{24pt}\selectfont
+        \addfontfeatures{LetterSpace=8}%
+        \textcolor{xgray}{ЧАСТЬ\;I}%
+        \kern-.02em%
+    }
+
+    \vspace{0.55em}
+
+    {\color{xgreen!40!black}\rule{3cm}{1.2pt}}
+
+    \vspace{16em}
+
+    \begin{tikzpicture}[overlay, remember picture]
+        \fill[white, path fading=circle with fuzzy edge 15 percent]
+            (0,-1cm) ellipse (7cm and 7cm);
+        \node[anchor=center, opacity=1] (logo) {\includegraphics[width=8.5cm]{l-00/logo}};
+        \tikzset{
+            matrixmath/.style={
+                anchor=center, 
+                font=\large\bfseries,
+                align=center
+            }
+        }
+
+        % 1. Формула Тейлора (Пеано)
+        \node[matrixmath, text=xgreen!60!black, rotate=10, anchor=south west] 
+            at ($(logo) + (85:3.4cm)$) 
+            {$f(x) = \sum\limits_{k=0}^{n} \frac{f^{(k)}(a)}{k!}(x-a)^k + o((x-a)^n)$};
+
+        % 2. Определение производной
+        \node[matrixmath, text=xgreen!90!black, rotate=3.5, anchor=west] 
+            at ($(logo) + (-5:2.6cm)$) 
+            {$f'(x_0) = \lim\limits_{\Delta x \to 0} \frac{f(x_0+\Delta x) - f(x_0)}{\Delta x}$};
+
+        % 3. Число e (Второй замечательный)
+        \node[matrixmath, text=xgreen!80!white, rotate=-8, anchor=north west] 
+            at ($(logo) + (-45:4.4cm)$) 
+            {$e = \lim\limits_{n\to\infty} \left(1 + \frac{1}{n}\right)^n$};
+
+        % 4. Первый замечательный предел
+        \node[matrixmath, text=xgreen!60!black, rotate=7, anchor=east] 
+            at ($(logo) + (220:3.8cm)$) 
+            {$\lim\limits_{x\to 0} \frac{\sin x}{x} = 1$};
+
+        % 5. Теорема Лагранжа (О среднем)
+        \node[matrixmath, text=black!60!white, rotate=-4, anchor=east] 
+            at ($(logo) + (180:2.8cm)$) 
+            {$f(b) - f(a) = f'(c)(b-a)$};
+
+        % 6. Правило Лейбница (производная произведения)
+        \node[matrixmath, text=xgreen!80!white, rotate=-10, anchor=north east] 
+            at ($(logo) + (120:4.2cm)$) 
+            {$(uv)^{(n)} = \sum\limits_{k=0}^{n} C_n^k u^{(n-k)}v^{(k)}$};
+
+        % ?. Формула Ньютона-Лейбница
+        %\node[matrixmath, text=black!80!white, rotate=-3, anchor=west] 
+        %    at ($(logo) + (-30:4.2cm)$)
+        %    {$\int_{a}^{b} f(x)\dif x = F(b)-F(a)$};
+
+        % ?. Определение предела последовательности (epsilon-N)
+        %\node[matrixmath, text=xgreen!80!white, rotate=0, anchor=north] 
+        %    at ($(logo) + (270:5.8cm)$) 
+        %    {$\forall \varepsilon > 0 \;\; \exists N(\varepsilon) \in \N: \forall n > N \;\; |x_n - a| < \varepsilon$};
+
+    \end{tikzpicture}
+
+    \nbvspace[4]
+
+    \begin{flushright}
+        \sffamily
+        \fontsize{14pt}{20pt}\selectfont
+        \addfontfeatures{LetterSpace=2}%
+        X.\,Y.~Zettov, И.\,И.~Иванов\hspace*{0.55cm}\null
+    \end{flushright}
+\end{center}
+
+\restoregeometry
+\pagestyle{fancy}

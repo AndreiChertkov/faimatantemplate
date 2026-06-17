@@ -1,0 +1,114 @@
+\begin{styletable}
+
+Множество (перечисление)
+    & $\set{1, 2, 3}$
+    & \verb|\set{1, 2, 3}|
+\\
+
+Множество (условие)
+    & $\setc{x \in X}{x > 0}$
+    & \verb|\setc{x \in X}{x > 0}|
+\\
+
+Мощность множества
+    & $\card{X}$
+    & \verb|\card{X}|
+\\
+
+Принадлежность
+    & $x \in A$, $A \ni y$
+    & \verb|\in|, \verb|\ni|
+\\
+
+Не принадлежит
+    & $x \not\in A$, $A \not\ni y$
+    & \verb|\not\in|, \verb|\not\ni|
+\\
+
+Пустое множество
+    & $\emptyset$
+    & \verb|\emptyset|
+\\
+
+Подмножество
+    & $A \subset B$, $B \supset A$
+    & \verb|\subset|, \verb|\supset|
+\\
+
+Не является подмножеством
+    & $A \not\subset B$, $B \not\supset A$
+    & \verb|\not\subset|, \verb|\not\supset|
+\\
+
+Строгое подмножество
+    & $A \subsetneq B, B \supsetneq A$
+    & \verb|\subsetneq|, \verb|\supsetneq|
+\\
+
+Объединение
+    & $A \cup B$
+    & \verb|\cup|
+\\
+
+Пересечение
+    & $A \cap B$
+    & \verb|\cap|
+\\
+
+Объединение системы
+    & $\bigcup_{s \in S} A_s$
+    & \verb|\bigcup_{s \in S} A_s|
+\\
+
+Пересечение системы
+    & $\bigcap_{s \in S} A_s$
+    & \verb|\bigcap_{s \in S} A_s|
+\\
+
+Разность
+    & $A \setminus B$
+    & \verb|\setminus|
+\\
+
+Прямое произведение
+    & $A \times B$
+    & \verb|\times|
+\\
+
+Отрезок
+    & $\seg{a}{b}$
+    & \verb|\seg{a}{b}|
+\\
+
+Интервал
+    & $\sego{a}{b}$
+    & \verb|\sego{a}{b}|
+\\
+
+Полуинтервал (<<справа>>)
+    & $\segor{a}{b}$
+    & \verb|\segor{a}{b}|
+\\
+
+Полуинтервал (<<слева>>)
+    & $\segol{a}{b}$
+    & \verb|\segol{a}{b}|
+\\
+
+Кортеж
+    & $\tup{1, 2, 3}$
+    & \verb|\tup{1, 2, 3}|
+\\
+
+\hline
+\end{styletable}
+
+\stylenote{
+    Элементы множества внутри фигурных скобок, а также левые и правые концы числовых интервалов отделяются друг от друга запятой.
+}
+
+\stylenote{
+    Символ $\subset$ обозначает нестрогое включение множеств (то есть допускается равенство).
+    Строгое включение записывается с помощью команд \texttt{\textbackslash subsetneq} ($\subsetneq$) и \texttt{\textbackslash supsetneq} ($\supsetneq$).
+    Символы $\subseteq$ и $\supseteq$ не используются.
+}

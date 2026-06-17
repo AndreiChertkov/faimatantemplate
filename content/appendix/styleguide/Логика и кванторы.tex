@@ -1,0 +1,64 @@
+\begin{styletable}
+
+Равносильность по определению
+    & $A \eqdef B$, $C(x) \eqdefr D(x)$
+    & \verb|\eqdef|, \verb|\eqdefr|
+\\
+
+Отрицание
+    & $\lnot A$
+    & \verb|\lnot A|
+\\
+
+Конъюнкция \newline(И)
+    & $A \land B$
+    & \verb|A \land B|
+\\
+
+Дизъюнкция \newline(ИЛИ)
+    & $A \lor B$
+    & \verb|A \lor B|
+\\
+
+Следование (импликация)
+    & $A \im B$
+    & \verb|A \im B|
+\\
+
+Эквивалентность
+    & $A \eq B$
+    & \verb|A \eq B|
+\\
+
+Квантор общности
+    & $\forall x \in X \qs x > 2$
+    & \verb|\forall x \in X \qs x > 2| 
+\\
+
+Квантор существования
+    & $\exists x \in X \qs x = 3$
+    & \verb|\exists x \in X \qs x = 3|
+\\
+
+Единственность существования
+    & $\existso x \in X \qs x = 3$
+    & \verb|\existso x \in X \qs x = 3|
+\\
+
+\hline
+\end{styletable}
+
+\stylenote{
+    Команды \texttt{\textbackslash eqdef} ($\eqdef$) и \texttt{\textbackslash eqdefr} ($\eqdefr$) используются исключительно для определения новых логических свойств и утверждений.
+    Для определения числовых величин или множеств применяется равенство по определению: команды \texttt{\textbackslash is} ($\is$) и \texttt{\textbackslash isr} ($\isr$).
+}
+
+\stylenote{
+    При использовании кванторов после указания переменной (и, возможно, ограничений на неё, отделяемых запятой) всегда ставится команда \texttt{\textbackslash qs}, которая выводит двоеточие, которое является чисто пунктуационным и логической нагрузки не несёт.
+    Пример сложного выражения с кванторами:
+    \begin{equation*}
+        \forall x, y \in X, x \le y \qs
+        \exists a, b \in \R \qs
+            a + b > x - y.
+    \end{equation*}
+}

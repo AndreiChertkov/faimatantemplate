@@ -1,0 +1,54 @@
+\begin{styletable}
+
+Окрестность
+    & $\nh{a}$ или $\nh[\d]{a}$
+    & \verb|\nh{a}| или \verb|\nh[\d]{a}|
+\\
+
+Проколотая окрестность
+    & $\nhp{a}$ или $\nhp[\d]{a}$
+    & \verb|\nhp{a}| или \verb|\nhp[\d]{a}|
+\\
+
+Предел \newline
+    & $\lim_{x \to 0}$
+    & \verb|\lim_{x \to 0}|
+\\
+
+Предел со стрелкой
+    & $A \appr{x \to 42} B$
+    & \verb|\appr{x \to 42}|
+\\
+
+Верхний предел
+    & $\uplim_{n \to \infty}$
+    & \verb|\uplim_{n \to \infty}|
+\\
+
+Нижний предел
+    & $\lowlim_{n \to \infty}$\rule[-14pt]{0pt}{0pt}
+    & \verb|\lowlim_{n \to \infty}|
+\\
+
+Асимпт. эквивалентность
+    & $f(x) \sim g(x)$
+    & \verb|f(x) \sim g(x)|
+\\
+
+<<o-малое>>
+    & $\so{x}$
+    & \verb|\so{x}|
+\\
+
+<<О-большое>>
+    & $\bo{x}$
+    & \verb|\bo{x}|
+\\
+
+\hline
+\end{styletable}
+
+\stylenote{
+    Команды \texttt{\textbackslash nh} и \texttt{\textbackslash nhp} без явного опционального аргумента обозначают окрестность и проколотую окрестность размера $\e$ для точки, заданной в качестве обязательного аргумента.
+    Если необходимо указать другой размер, он передаётся в квадратных скобках первым аргументом.
+}

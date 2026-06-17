@@ -1,0 +1,350 @@
+% =============================================================================
+% ---> Геометрия страницы
+% =============================================================================
+
+\usepackage[
+  papersize={170mm,240mm},
+  inner=18mm,
+  outer=20mm,
+  bindingoffset=10mm,
+  top=25mm,
+  bottom=28mm,
+  headheight=0pt,
+  headsep=0pt,
+  footskip=13mm,
+  heightrounded,
+]{geometry}
+
+\raggedbottom
+
+
+% =============================================================================
+% ---> Шрифты
+% =============================================================================
+
+\usepackage{fontspec}
+
+\defaultfontfeatures{Ligatures=TeX}
+
+\setmainfont{STIX Two Text}[
+  BoldFont       = STIX Two Text Bold,
+  ItalicFont     = STIX Two Text Italic,
+  BoldItalicFont = STIX Two Text Bold Italic,
+  Script         = Default,
+  Language       = Default,
+]
+
+\setsansfont{Libertinus Sans}[
+  BoldFont       = Libertinus Sans Bold,
+  ItalicFont     = Libertinus Sans Italic,
+  BoldItalicFont = Libertinus Sans Italic, % Bold Italic не существует!
+  Script         = Default,
+  Language       = Default,
+]
+
+\directlua{
+  luaotfload.add_fallback("monofallback", {
+    "DejaVu Sans Mono:mode=node;",
+    % при желании можно добавить ещё:
+    % "STIX Two Math:mode=node;",
+  })
+}
+
+\setmonofont{CMU Typewriter Text}[
+  BoldFont       = CMU Typewriter Text Bold,
+  ItalicFont     = CMU Typewriter Text Italic,
+  BoldItalicFont = CMU Typewriter Text BoldItalic,
+  Script         = Default,
+  Language       = Default,
+  RawFeature     = {fallback=monofallback},
+]
+
+\DeclareFontSeriesDefault[sf]{bf}{b}
+
+
+% =============================================================================
+% ---> Математика
+% =============================================================================
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{unicode-math}
+
+\setmathfont{STIX Two Math}
+
+
+% =============================================================================
+% ---> Цветные блоки и рамки
+% =============================================================================
+
+\usepackage[most]{tcolorbox}
+
+
+% =============================================================================
+% ---> Язык
+% =============================================================================
+
+\usepackage{polyglossia}
+
+\setdefaultlanguage{russian}
+\setotherlanguage{english}
+
+
+% =============================================================================
+% ---> Графика и рисунки
+% =============================================================================
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  justification=raggedright,
+  singlelinecheck=false,
+}
+
+
+% =============================================================================
+% ---> Форматирование текста
+% =============================================================================
+
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{lua-ul}
+\usepackage{etoolbox}
+\usepackage{fontawesome}
+\usepackage{xspace}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{lastpage}
+
+
+% =============================================================================
+% ---> TikZ
+% =============================================================================
+
+\usepackage{tikz}
+
+\usetikzlibrary{
+  calc,
+  decorations.pathmorphing,
+  fadings,
+}
+
+
+% =============================================================================
+% ---> Код на Python (minted)
+% =============================================================================
+
+\usepackage{minted}
+
+\setminted{
+  fontsize=\small,
+  breaklines=true,
+  breakanywhere=false,
+  autogobble=true,
+  tabsize=4,
+  frame=none,
+  numbersep=8pt,
+  xleftmargin=0pt,
+  xrightmargin=0pt,
+}
+\setminted[python]{linenos=false}
+
+
+% =============================================================================
+% ---> Псевдокод алгоритмов (algpseudocode)
+% =============================================================================
+
+\usepackage{algpseudocode}
+
+% Русификация ключевых слов
+\algrenewcommand\algorithmicif{\textbf{если}}
+\algrenewcommand\algorithmicthen{\textbf{то}}
+\algrenewcommand\algorithmicelse{\textbf{иначе}}
+\algrenewcommand\algorithmicend{\textbf{конец}}
+\algrenewcommand\algorithmicfor{\textbf{для}}
+\algrenewcommand\algorithmicforall{\textbf{для всех}}
+\algrenewcommand\algorithmicdo{\textbf{выполнять}}
+\algrenewcommand\algorithmicwhile{\textbf{пока}}
+\algrenewcommand\algorithmicrepeat{\textbf{повторять}}
+\algrenewcommand\algorithmicuntil{\textbf{пока не}}
+\algrenewcommand\algorithmicreturn{\textbf{вернуть}}
+\algrenewcommand\algorithmicrequire{\textbf{Вход:}}
+\algrenewcommand\algorithmicensure{\textbf{Выход:}}
+
+
+% =============================================================================
+% ---> Списки
+% =============================================================================
+
+\setlist[itemize,1]{
+  label=\textcolor{listL1}{\textbullet},
+  leftmargin=\parindent,
+  itemsep=0.0em,
+  parsep=0pt,
+  topsep=0.5em,
+  partopsep=0.5em,
+}
+\setlist[itemize,2]{
+  label=\textcolor{listL2}{\textbullet},
+  leftmargin=*,
+  itemsep=0.25em,
+  parsep=0pt,
+  topsep=0.5em,
+}
+\setlist[itemize,3]{
+  label=\textcolor{listL3}{\textbullet},
+  leftmargin=*,
+  itemsep=0.2em,
+  parsep=0pt,
+  topsep=0.4em,
+}
+
+\setlist[enumerate,1]{
+  label=\textcolor{listL1}{\arabic*.},
+  leftmargin=\parindent,
+  itemsep=0pt,
+  parsep=0pt,
+  topsep=0.5em,
+  partopsep=0.5em,
+}
+\setlist[enumerate,2]{
+  label=\textcolor{listL2}{\arabic{enumi}.\arabic*.},
+  leftmargin=*,
+  itemsep=0.35em,
+  parsep=0pt,
+  topsep=0.5em,
+}
+\setlist[enumerate,3]{
+  label=\textcolor{listL3}{\arabic{enumi}.\arabic{enumii}.\arabic*.},
+  leftmargin=*,
+  itemsep=0.35em,
+  parsep=0pt,
+}
+
+
+% =============================================================================
+% ---> Колонтитулы
+% =============================================================================
+
+\usepackage{fancyhdr}
+
+\newcommand{\mypagenum}{%
+  \textcolor{xgray}{\textbf{\textemdash}} \hspace{0.5em}%
+  \textbf{\thepage}%
+  \hspace{0.5em} \textcolor{xgray}{\textbf{\textemdash}}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\mypagenum}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\mypagenum}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+
+% =============================================================================
+% ---> Заголовки глав, секций и подсекций
+% =============================================================================
+
+\usepackage{titlesec}
+
+\input{style/base_chapter}    % Стиль оформления chapter
+\input{style/base_section}    % Стиль оформления section
+\input{style/base_subsection} % Стиль оформления subsection
+
+
+% =============================================================================
+% ---> Микротипографика
+% =============================================================================
+
+\usepackage{microtype}
+
+\emergencystretch=3em
+
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\brokenpenalty=10000
+\binoppenalty=4000
+\relpenalty=4000
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{8pt plus 3pt minus 3pt}%
+  \setlength{\belowdisplayskip}{8pt plus 3pt minus 3pt}%
+  \setlength{\abovedisplayshortskip}{2pt plus 3pt minus 2pt}%
+  \setlength{\belowdisplayshortskip}{5pt plus 3pt minus 2pt}%
+}
+\allowdisplaybreaks[1]
+
+\setlength{\skip\footins}{18pt plus 4pt minus 2pt}
+
+\renewcommand{\footnoterule}{%
+  \kern-3pt
+  \hrule width 0.35\textwidth height 0.4pt
+  \kern 2.6pt
+}
+
+
+% =============================================================================
+% ---> Гиперссылки
+% =============================================================================
+
+\usepackage[bookmarks, hidelinks]{hyperref}
+\usepackage{bookmark}
+\hypersetup{
+  pdftitle          = {\PDFBookTitle},
+  pdfauthor         = {\PDFBookAuthor},
+  pdfsubject        = {\PDFBookSubject},
+  pdfkeywords       = {\PDFBookKeywords},
+  pdflang           = {ru-RU},
+  pdfencoding       = unicode,
+  bookmarksnumbered = true,
+  bookmarksopen     = true,
+}
+\pdfstringdefDisableCommands{%
+  \def\foc#1{#1}%
+  \def\emp#1{#1}%
+  \def\underLine#1{#1}%
+  \def\textcolor#1#2{#2}%
+}
+\urlstyle{same}
+
+
+% =============================================================================
+% ---> Счётчики и нумерация
+% =============================================================================
+
+\setcounter{tocdepth}{1}
+\setcounter{secnumdepth}{1}
+
+
+% =============================================================================
+% ---> Локализация
+% =============================================================================
+
+\addto\captionsrussian{
+  %\renewcommand{\chaptername}{Лекция}
+  \renewcommand{\contentsname}{Содержание}
+}
+
+
+% =============================================================================
+% ---> Заметки и задачи (todonotes)
+% =============================================================================
+% Для отключения добавить disable: \usepackage[disable, ...]{todonotes}
+
+\usepackage[textsize=scriptsize, colorinlistoftodos, shadow, loadshadowlibrary]{todonotes}
+\makeatletter
+\providecommand*{\toclevel@todo}{0}
+\makeatother

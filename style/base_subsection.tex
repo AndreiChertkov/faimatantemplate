@@ -1,0 +1,105 @@
+% =============================================================================
+% style/base_subsection.tex
+% =============================================================================
+
+
+% =============================================================================
+% Цвета заголовков подразделов
+% =============================================================================
+
+\colorlet{subsectionAccent}{xred!72!black}
+\colorlet{subsectionTitleColor}{subsectionAccent}
+
+% Три тонкие вертикальные линии (subsection всегда без номера).
+\colorlet{subsectionMarkA}{xred!60!white}
+\colorlet{subsectionMarkB}{xred!75!white}
+\colorlet{subsectionMarkC}{xred!90!black}
+
+
+% =============================================================================
+% Геометрия
+% =============================================================================
+
+\newlength{\subsectionBaselineShift}
+\setlength{\subsectionBaselineShift}{4.6pt}
+
+
+% =============================================================================
+% Метка subsection: три тонкие вертикальные линии
+% =============================================================================
+
+\providecommand{\subsectionMark}{}
+\renewcommand{\subsectionMark}{%
+  \tikz[baseline={([yshift=-\subsectionBaselineShift]S.center)}]{%
+    \node[
+      minimum width=5.2mm,
+      minimum height=5.4mm,
+      inner sep=0pt,
+      outer sep=0pt
+    ] (S) {};
+
+    \draw[
+      subsectionMarkA,
+      line width=0.95pt,
+      line cap=round,
+    ]
+      ([xshift=0.8mm, yshift=-0.15mm]S.north west) --
+      ([xshift=0.8mm, yshift=0.15mm]S.south west);
+
+    \draw[
+      subsectionMarkB,
+      line width=1.10pt,
+      line cap=round,
+    ]
+      ([xshift=2.2mm, yshift=-0.15mm]S.north west) --
+      ([xshift=2.2mm, yshift=0.15mm]S.south west);
+
+    \draw[
+      subsectionMarkC,
+      line width=1.25pt,
+      line cap=round,
+    ]
+      ([xshift=3.6mm, yshift=-0.15mm]S.north west) --
+      ([xshift=3.6mm, yshift=0.15mm]S.south west);
+  }%
+}
+
+
+% =============================================================================
+% Subsection: метка слева, без горизонтальных линий
+% =============================================================================
+
+\titleformat{\subsection}[hang]
+  {%
+    \normalfont\sffamily\bfseries\fontsize{15.5}{19}\selectfont%
+    \raggedright\color{subsectionTitleColor}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\subsectionMark}
+  {0.55em}
+  {}
+
+
+% =============================================================================
+% Звёздная форма subsection
+% =============================================================================
+
+\titleformat{name=\subsection,numberless}[hang]
+  {%
+    \normalfont\sffamily\bfseries\fontsize{15.5}{19}\selectfont%
+    \raggedright\color{subsectionTitleColor}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\subsectionMark}
+  {0.55em}
+  {}
+
+
+% =============================================================================
+% Отступы subsection
+% =============================================================================
+
+\titlespacing*{\subsection}
+  {0pt}
+  {4.5ex plus 1.5ex minus 1.3ex}
+  {2.0ex plus 0.5ex minus 0.4ex}

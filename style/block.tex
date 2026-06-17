@@ -1,0 +1,620 @@
+% =============================================================================
+% ВСПОМОГАТЕЛЬНЫЕ ЭЛЕМЕНТЫ
+% =============================================================================
+
+\tcbuselibrary{theorems, skins, breakable, xparse, minted}
+
+\newcommand{\blockMainText}[1]{%
+    \ignorespaces#1\par\normalfont
+}
+
+\newcommand{\customtitlefont}{
+    \sffamily\bfseries\large
+}
+
+\newcommand{\boxsepline}{
+    \par\vspace{3mm plus 1mm minus 1mm}
+    {\color{black!40}\hrule height 1.4pt}
+    \vspace{2.5mm plus 1mm minus 1mm}
+    \noindent
+}
+
+\newcommand{\printRemark}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        {\small
+            \settowidth{\noteiconwidth}{\noteicon}%
+            \setlength{\parindent}{\noteiconwidth}%
+            \noindent\noteicon\itshape\color{black!80}#1\par
+        }%
+    \fi
+}
+
+\newcommand{\printProof}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        \begingroup
+            \pushQED{\qed}%
+            \textbf{Доказательство.}\ #1\unskip\popQED\par
+        \endgroup
+    \fi%
+}
+
+\newcommand{\printExamples}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        \begin{itemize}[leftmargin=*, label=\textcolor{listL1}{\textbullet}, itemsep=0.5em, parsep=0pt, topsep=3pt]
+            #1
+        \end{itemize}
+    \fi
+}
+
+\newcommand{\printSolution}[1]{%
+  \if\relax\detokenize{#1}\relax\else
+    \boxsepline
+    \begingroup
+        \pushQED{\qed}%
+        \textbf{Решение.}\ #1\unskip\popQED\par
+    \endgroup
+  \fi
+}
+
+\newcommand{\printOutput}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        \textbf{Вывод.}\ #1\par
+    \fi
+}
+
+\newcommand{\printComplexity}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        \textbf{Сложность.}\ #1\par
+    \fi
+}
+
+
+% =============================================================================
+% НАСТРОЙКА СЧЕТЧИКОВ И СТИЛЯ
+% =============================================================================
+
+\newcounter{commonThmCounter}[section]
+\renewcommand{\thecommonThmCounter}{\thesection.\arabic{commonThmCounter}}
+
+\tcbset{
+  myboxstyle/.style={
+    enhanced jigsaw,
+    breakable,
+    enforce breakable,
+    colback=white,
+    colframe=#1,
+    coltext=black,
+    colbacktitle=#1,
+    coltitle=white,
+    fonttitle=\customtitlefont,
+    parbox=false,
+    arc=3mm,
+    boxrule=0.7mm,
+    opacityback=1,
+    top=2.5mm, bottom=2mm, left=2mm, right=2mm,
+    before skip=6mm plus 2mm minus 1mm,
+    after skip=6mm plus 2mm minus 1mm,
+    pad at break*=3mm,
+    before upper app={%
+      \setlength{\parindent}{1.5em}%
+      \setlength{\parskip}{0.4em plus 0.25em minus 0.2em}%
+      \clubpenalty=2000%
+      \widowpenalty=2000%
+      \displaywidowpenalty=2000%
+      \brokenpenalty=0%
+      \interlinepenalty=0%
+      \noindent\ignorespaces
+    },
+  },
+}
+
+\numberwithin{equation}{chapter}
+
+
+% =============================================================================
+% ВСПОМОГАТЕЛЬНЫЕ МАКРОСЫ ДЛЯ ЗАГОЛОВКОВ И МЕТОК
+% =============================================================================
+
+\newcommand{\blockSetLabel}[1]{\ifstrempty{#1}{}{\label{#1}}}
+
+\newlength{\blockTitleHang}
+\newsavebox{\blockPrefixBox}
+
+\newif\ifblockBadgeNames
+\blockBadgeNamestrue
+
+\newcommand{\blockBadge}[1]{%
+    \tikz[baseline=(B.base)]
+        \node[
+            draw=white,
+            line width=1pt,
+            rounded corners=2.6pt,
+            fill=white,
+            text=tcbcolframe,
+            inner xsep=6pt,
+            inner ysep=2.5pt,
+            minimum width=2em,
+            anchor=base,
+            font=\sffamily\bfseries\Large,
+        ] (B) {\strut #1};%
+}
+
+\newcommand{\blockName}[2]{%
+    \ifblockBadgeNames\blockBadge{#1}\else #2\fi
+}
+
+\newcommand{\blockTitle}[2]{%
+    \sbox{\blockPrefixBox}{#1\nobreakspace\hspace{0.25em}\thecommonThmCounter\ifstrempty{#2}{}{.}}%
+    \settowidth{\blockTitleHang}{\usebox{\blockPrefixBox}\space}%
+    \hangindent=\blockTitleHang
+    \hangafter=1
+    \hyphenpenalty=10000\exhyphenpenalty=10000
+    \pretolerance=9999\tolerance=2000
+    \hbadness=10000
+    \raggedright
+    \usebox{\blockPrefixBox}\ifstrempty{#2}{}{ #2}%
+}
+
+\newcommand{\blockTitleStar}[2]{%
+    \sbox{\blockPrefixBox}{#1}%
+    \settowidth{\blockTitleHang}{\usebox{\blockPrefixBox}\hspace{0.5em}}%
+    \hangindent=\blockTitleHang
+    \hangafter=1
+    \hyphenpenalty=10000\exhyphenpenalty=10000
+    \pretolerance=9999\tolerance=2000
+    \hbadness=10000
+    \raggedright
+    \usebox{\blockPrefixBox}\ifstrempty{#2}{}{\hspace{0.5em}#2}%
+}
+
+
+% =============================================================================
+% ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЙ (НУМЕРОВАННЫХ)
+% =============================================================================
+
+\newtcolorbox{defiBox}[2]{
+  myboxstyle=deficolor,
+  code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+  title={\blockTitle{\blockName{О}{Определение}}{#2}},
+}
+
+\newtcolorbox{statBox}[2]{
+    myboxstyle=statcolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{У}{Утверждение}}{#2}},
+}
+
+\newtcolorbox{lemmBox}[2]{
+    myboxstyle=lemmcolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{Л}{Лемма}}{#2}},
+}
+
+\newtcolorbox{theoBox}[2]{
+    myboxstyle=theocolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{Т}{Теорема}}{#2}},
+}
+
+\newtcolorbox{concBox}[2]{
+    myboxstyle=conccolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{С}{Следствие}}{#2}},
+}
+
+\newtcolorbox{examBox}[2]{
+    myboxstyle=examcolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{П}{Пример}}{#2}},
+}
+
+\newtcolorbox{noteBox}[2]{
+    myboxstyle=notecolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{З}{Замечание}}{#2}},
+}
+
+\newtcolorbox{algoBox}[2]{
+    myboxstyle=algocolor,
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\blockTitle{\blockName{А}{Алгоритм}}{#2}},
+}
+
+\newtcolorbox[auto counter, number within=chapter]{taskBox}{
+    enhanced,
+    colback=white,
+    colframe=white!50!black,
+    coltitle=black,
+    fonttitle=\bfseries,
+    detach title,
+    before upper={\textbf{\tcbtitle.}\ },
+    frame hidden,
+    left=0mm, right=0mm, top=1mm, bottom=1mm,
+    title={\thetcbcounter}
+}
+
+
+% =============================================================================
+% ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЙ (НЕНУМЕРОВАННЫХ)
+% =============================================================================
+
+\newtcolorbox{defiBoxStar}[2]{
+    myboxstyle=deficolor,
+    title={\blockTitleStar{\blockName{О}{Определение}}{#2}},
+}
+
+\newtcolorbox{statBoxStar}[2]{
+    myboxstyle=statcolor,
+    title={\blockTitleStar{\blockName{У}{Утверждение}}{#2}},
+}
+
+\newtcolorbox{lemmBoxStar}[2]{
+    myboxstyle=lemmcolor,
+    title={\blockTitleStar{\blockName{Л}{Лемма}}{#2}},
+}
+
+\newtcolorbox{theoBoxStar}[2]{
+    myboxstyle=theocolor,
+    title={\blockTitleStar{\blockName{Т}{Теорема}}{#2}},
+}
+
+\newtcolorbox{concBoxStar}[2]{
+    myboxstyle=conccolor,
+    title={\blockTitleStar{\blockName{С}{Следствие}}{#2}},
+}
+
+\newtcolorbox{examBoxStar}[2]{
+    myboxstyle=examcolor,
+    title={\blockTitleStar{\blockName{П}{Пример}}{#2}},
+}
+
+\newtcolorbox{noteBoxStar}[2]{
+    myboxstyle=notecolor,
+    title={\blockTitleStar{\blockName{З}{Замечание}}{#2}},
+}
+
+\newtcolorbox{algoBoxStar}[2]{
+    myboxstyle=algocolor,
+    title={\blockTitleStar{\blockName{А}{Алгоритм}}{#2}},
+}
+
+
+% =============================================================================
+% КОМАНДЫ-ОБЕРТКИ
+% =============================================================================
+
+% \defi{Метка}{Термин}{Текст}[Примеры][Замечание]
+\NewDocumentCommand{\defi}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{defiBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printExamples{#5}
+            \printRemark{#6}
+        \end{defiBoxStar}
+    }{%
+        \begin{defiBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printExamples{#5}
+            \printRemark{#6}
+        \end{defiBox}
+    }
+}
+
+% \stat{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\stat}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{statBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{statBoxStar}
+    }{%
+        \begin{statBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{statBox}
+    }
+}
+
+% \lemm{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\lemm}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{lemmBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{lemmBoxStar}
+    }{%
+        \begin{lemmBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{lemmBox}
+    }
+}
+
+% \theo{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\theo}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{theoBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{theoBoxStar}
+    }{%
+        \begin{theoBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{theoBox}
+    }
+}
+
+% \conc{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\conc}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{concBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{concBoxStar}
+    }{%
+        \begin{concBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printProof{#5}
+            \printRemark{#6}
+        \end{concBox}
+    }
+}
+
+% \exam{Метка}{Название}{Текст / Условие}[Решение][Замечание]
+\NewDocumentCommand{\exam}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{examBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printSolution{#5}
+            \printRemark{#6}
+        \end{examBoxStar}
+    }{%
+        \begin{examBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printSolution{#5}
+            \printRemark{#6}
+        \end{examBox}
+    }
+}
+
+% \note{Метка}{Название}{Текст}
+\NewDocumentCommand{\note}{ s m m +m }{
+    \IfBooleanTF{#1}{%
+        \begin{noteBoxStar}{#2}{#3}
+            \blockMainText{#4}
+        \end{noteBoxStar}
+    }{%
+        \begin{noteBox}{#2}{#3}
+            \blockMainText{#4}
+        \end{noteBox}
+    }
+}
+
+% \algo{Метка}{Название}{Описание алгоритма}[Сложность][Замечание]
+\NewDocumentCommand{\algo}{ s m m +m +O{} +O{} }{
+    \IfBooleanTF{#1}{%
+        \begin{algoBoxStar}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printComplexity{#5}
+            \printRemark{#6}
+        \end{algoBoxStar}
+    }{%
+        \begin{algoBox}{#2}{#3}
+            \blockMainText{#4}
+            \par \normalfont
+            \printComplexity{#5}
+            \printRemark{#6}
+        \end{algoBox}
+    }
+}
+
+% \task{Текст}
+\NewDocumentCommand{\task}{ +m }{
+    \begin{taskBox}
+        \blockMainText{#1}
+    \end{taskBox}
+}
+
+
+% =============================================================================
+% КОД И ВЫВОД ПРОГРАММ
+% =============================================================================
+
+% --- Загрузка Lua-препроцессора и автоматическая чистка ----------------------- % ←
+\directlua{code_filter = dofile("style/code_filter.lua")}                          % ←
+\AtEndDocument{\directlua{code_filter.cleanup()}}                                  % ←
+
+% Иконка-маркер стандартного потока вывода
+\newcommand{\stdoutIcon}{%
+    \raisebox{0.05ex}{\faAngleRight}%
+    \kern0.1em
+    \rule[-0.1ex]{0.45em}{0.55pt}%
+}
+
+% Бейдж: иконка + номер в круглых скобках                                         % ←
+\newcommand{\stdoutBadge}[1]{%
+    \tikz[baseline=(B.base)]
+        \node[
+            rounded corners=2pt,
+            draw=xmatrixDark!55,
+            line width=0.35pt,
+            fill=xmatrix!8,
+            text=xmatrixDark,
+            inner xsep=5pt,
+            inner ysep=1.2pt,
+            font=\sffamily\bfseries\scriptsize,
+        ] (B) {\strut\stdoutIcon\hspace{0.45em}#1};%
+}
+
+\newcommand{\cmo}[1]{%
+    \unskip
+    \nobreak\null\hfill\nobreak
+    \mbox{\stdoutBadge{#1}}%
+}
+
+% Параметры левой колонки вывода программы
+\newlength{\codeOutputNumberWidth}
+\newlength{\codeOutputNumberGap}
+\newlength{\codeOutputRuleWidth}
+\newlength{\codeOutputTextGap}
+\newlength{\codeOutputLeftMargin}
+\newlength{\codeOutputNumberSep}
+
+\setlength{\codeOutputNumberWidth}{1.0em} % колонка номеров (под иконкой)
+\setlength{\codeOutputNumberGap}{0.55em}  % зазор номер -> линия
+\setlength{\codeOutputRuleWidth}{0.4pt}   % толщина линии
+\setlength{\codeOutputTextGap}{0.75em}    % зазор линия -> текст
+
+\setlength{\codeOutputLeftMargin}{%
+    \dimexpr
+        \codeOutputNumberWidth
+        + \codeOutputNumberGap
+        + \codeOutputRuleWidth
+        + \codeOutputTextGap
+    \relax
+}
+
+% numbersep = расстояние от ПРАВОГО края номера до левого края текста
+\setlength{\codeOutputNumberSep}{%
+    \dimexpr
+        \codeOutputNumberGap
+        + \codeOutputRuleWidth
+        + \codeOutputTextGap
+    \relax
+}
+
+% Стиль номеров строк блока вывода программы
+\newcommand{\codeOutputLineNumberStyle}{%
+    \renewcommand{\theFancyVerbLine}{%
+        \makebox[\codeOutputNumberWidth][c]{%
+            \ttfamily\scriptsize\color{xmatrixDark!70}%
+            \arabic{FancyVerbLine}%
+        }%
+    }%
+}
+
+% Шапка: иконка слева, затем текст                                                % ←
+\tcbset{
+  codeOutputBoxStyle/.style={
+    enhanced,
+    breakable,
+    colback=xmatrix!4,
+    colframe=xmatrixDark!55,
+    colbacktitle=xmatrixDark!85,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries\scriptsize,
+    title={%
+        \makebox[0pt][l]{\stdoutIcon}%
+        \hspace*{\codeOutputLeftMargin}%
+        \textsc{Вывод программы}\hfill
+    },
+    boxrule=0.3pt,
+    arc=1.4mm,
+    left=1mm, right=1mm, top=1mm, bottom=1mm,
+    toptitle=0.5mm, bottomtitle=0.5mm,
+    titlerule=0pt,
+    before skip=2.2mm plus 0.6mm minus 0.4mm,
+    after skip=0pt,
+    parbox=false,
+    % Непрерывная вертикальная линия-разделитель
+    % (interior.north west / south west — границы внутренней области без рамки)
+    overlay={%
+    \draw[xmatrixDark!25, line width=\codeOutputRuleWidth]
+        ([xshift=\dimexpr\codeOutputNumberWidth+\codeOutputNumberGap+0.5\codeOutputRuleWidth\relax]
+            interior.north west)
+        --
+        ([xshift=\dimexpr\codeOutputNumberWidth+\codeOutputNumberGap+0.5\codeOutputRuleWidth\relax]
+            interior.south west);
+    },
+  },
+}
+
+% Печать содержимого файла вывода: номера слева, в скобках                        % ←
+\newcommand{\printCodeOutputFile}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \par\nobreak
+        \begingroup
+            \codeOutputLineNumberStyle
+            \IfFileExists{#1}{%
+                \begin{tcolorbox}[codeOutputBoxStyle]
+                    \inputminted[
+                        fontsize=\small,
+                        breaklines=true,
+                        breakanywhere=true,
+                        autogobble=false,
+                        tabsize=4,
+                        linenos=true,
+                        numbers=left,
+                        numbersep=\codeOutputNumberSep,   % ← было \codeOutputTextGap
+                        xleftmargin=\codeOutputLeftMargin,
+                        xrightmargin=0.4em,
+                        numberblanklines=true,
+                    ]{text}{#1}%
+                \end{tcolorbox}%
+            }{%
+                \begin{tcolorbox}[codeOutputBoxStyle]
+                    \noindent
+                    \textcolor{xred}{%
+                        \sffamily\bfseries\small
+                        Файл вывода не найден: \texttt{\detokenize{#1}}%
+                    }%
+                \end{tcolorbox}%
+            }%
+        \endgroup
+    \fi
+}
+
+% \code{Метка}{Название}{Файл с кодом}[Файл с выводом]
+\NewTCBInputListing{\code}{ m m m O{} }{
+    myboxstyle=codecolor,
+    bottom=1mm,
+    after skip=4mm plus 1mm minus 1mm,
+    code={%
+        \refstepcounter{commonThmCounter}%
+        \blockSetLabel{#1}%
+        % препроцессинг исходного файла → создаём временный *.stripped            % ←
+        \directlua{code_filter.process(                                            % ←
+            "\luaescapestring{#3}",                                                % ←
+            "\luaescapestring{#3.stripped}")}%                                     % ←
+    },
+    title={\blockTitle{\blockName{К}{Код}}{#2}},
+    listing engine=minted,
+    listing only,
+    listing file={#3.stripped},                                                    % ← .stripped
+    minted language=python,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        breakanywhere=false,
+        autogobble=true,
+        tabsize=4,
+        escapeinside=«»,
+    },
+    after upper app={\printCodeOutputFile{#4}},
+}

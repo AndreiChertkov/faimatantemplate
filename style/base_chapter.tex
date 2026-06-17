@@ -1,0 +1,236 @@
+% =============================================================================
+% style/base_chapter.tex
+% =============================================================================
+
+
+% =============================================================================
+% Двузначный номер главы в бейдже; в приложениях оставляем A, B, ...
+% =============================================================================
+
+\makeatletter
+\@ifundefined{ifchapterbadgeappendix}{\newif\ifchapterbadgeappendix}{}
+\makeatother
+
+\pretocmd{\appendix}{\chapterbadgeappendixtrue}{}{}
+
+\providecommand{\chapterBadgeNumber}{}
+\renewcommand{\chapterBadgeNumber}{%
+  \ifchapterbadgeappendix%
+    \thechapter%
+  \else%
+    \ifnum\value{chapter}<10 0\fi\arabic{chapter}%
+  \fi%
+}
+
+
+% =============================================================================
+% Цвета заголовков глав
+% =============================================================================
+
+% Нумерованный шестиугольный бейдж.
+\colorlet{chapterBadgeTop}{xmatrix!55!white}
+\colorlet{chapterBadgeBottom}{xmatrix!85!black}
+\colorlet{chapterBadgeFrame}{xmatrix!45!black}
+\colorlet{chapterBadgeText}{xmatrix!3!white}
+
+% Одна горизонтальная линия под нумерованной главой.
+\colorlet{chapterRuleColor}{xmatrix!60!black}
+
+% Толстая вертикальная метка для ненумерованной главы.
+\colorlet{chapterNumberlessLine}{xmatrix!60!black}
+
+
+% =============================================================================
+% Fading для чистого верхнего блика
+% =============================================================================
+
+\tikzfading[
+  name=chapterGlossFade,
+  top color=transparent!0,
+  bottom color=transparent!100,
+]
+
+
+% =============================================================================
+% Геометрия и выравнивание декоративных элементов заголовка
+% =============================================================================
+
+\newlength{\chapterBadgeBaselineShift}
+\setlength{\chapterBadgeBaselineShift}{6.3pt}
+
+\newlength{\chapterNumberlessBaselineShift}
+\setlength{\chapterNumberlessBaselineShift}{6.3pt}
+
+% Контур шестиугольного бейджа.
+\newcommand{\chapterBadgeHexPath}[1]{%
+  ([xshift=2.8mm]#1.north west) --
+  ([xshift=-2.8mm]#1.north east) --
+  ([yshift=-0.25mm]#1.east) --
+  ([xshift=-2.8mm]#1.south east) --
+  ([xshift=2.8mm]#1.south west) --
+  ([yshift=0.25mm]#1.west) --
+  cycle%
+}
+
+
+% =============================================================================
+% Бейдж нумерованной главы
+% =============================================================================
+
+\providecommand{\chapterMatrixBadgeE}[1]{}
+\renewcommand{\chapterMatrixBadgeE}[1]{%
+  \tikz[baseline={([yshift=-\chapterBadgeBaselineShift]B.center)}]{%
+    % Невидимый узел задаёт размеры бейджа.
+    \node[
+      minimum width=18.4mm,
+      minimum height=12.0mm,
+      inner xsep=5.8pt,
+      inner ysep=1.9pt,
+      outer sep=0pt,
+      font=\sffamily\bfseries\fontsize{20}{22}\selectfont
+    ] (B) {\phantom{\strut #1}};
+
+    % Внешняя мягкая тень.
+    \begin{scope}[xshift=0.50mm, yshift=-0.60mm]
+      \path[
+        fill=black,
+        opacity=0.18,
+        rounded corners=1.8pt,
+      ]
+        \chapterBadgeHexPath{B};
+    \end{scope}
+
+    % Основная заливка: чистый вертикальный градиент без среднего цвета.
+    \shade[
+      top color=chapterBadgeTop,
+      bottom color=chapterBadgeBottom,
+      draw=chapterBadgeFrame,
+      line width=0.80pt,
+      rounded corners=1.8pt,
+      line join=round,
+    ]
+      \chapterBadgeHexPath{B};
+
+    % Верхний глянцевый блик: плавно исчезает к середине бейджа.
+    \begin{scope}
+      \clip[rounded corners=1.8pt]
+        \chapterBadgeHexPath{B};
+      \path[
+        fill=white,
+        path fading=chapterGlossFade,
+        opacity=0.55,
+      ]
+        ([yshift=-0.25mm]B.north west) rectangle
+        ([yshift=-0.25mm]B.east);
+    \end{scope}
+
+    % Тонкий внутренний световой кант вверху.
+    \begin{scope}
+      \clip[rounded corners=1.8pt]
+        \chapterBadgeHexPath{B};
+      \draw[
+        white,
+        opacity=0.55,
+        line width=0.50pt,
+        line cap=round,
+      ]
+        ([xshift=3.0mm, yshift=-0.42mm]B.north west) --
+        ([xshift=-3.0mm, yshift=-0.42mm]B.north east);
+    \end{scope}
+
+    % Тонкий внутренний теневой кант внизу.
+    \begin{scope}
+      \clip[rounded corners=1.8pt]
+        \chapterBadgeHexPath{B};
+      \draw[
+        black,
+        opacity=0.22,
+        line width=0.45pt,
+        line cap=round,
+      ]
+        ([xshift=3.0mm, yshift=0.45mm]B.south west) --
+        ([xshift=-3.0mm, yshift=0.45mm]B.south east);
+    \end{scope}
+
+    % Наружная обводка поверх всех эффектов.
+    \path[
+      draw=chapterBadgeFrame,
+      line width=0.80pt,
+      rounded corners=1.8pt,
+      line join=round,
+    ]
+      \chapterBadgeHexPath{B};
+
+    % Номер главы.
+    \node[
+      minimum width=18.4mm,
+      minimum height=12.0mm,
+      inner xsep=5.8pt,
+      inner ysep=1.9pt,
+      outer sep=0pt,
+      text=chapterBadgeText,
+      font=\sffamily\bfseries\fontsize{20}{22}\selectfont,
+    ] at (B.center) {\strut #1};
+  }%
+}
+
+
+% =============================================================================
+% Метка ненумерованной главы: одна толстая вертикальная линия
+% =============================================================================
+
+\providecommand{\chapterNumberlessMark}{}
+\renewcommand{\chapterNumberlessMark}{%
+  \tikz[baseline={([yshift=-\chapterNumberlessBaselineShift]C.center)}]{%
+    \node[
+      minimum width=5.0mm,
+      minimum height=12.0mm,
+      inner sep=0pt,
+      outer sep=0pt
+    ] (C) {};
+
+    \draw[
+      chapterNumberlessLine,
+      line width=2.6pt,
+      line cap=round,
+    ]
+      ([xshift=2.2mm, yshift=-0.3mm]C.north west) --
+      ([xshift=2.2mm, yshift=0.3mm]C.south west);
+  }%
+}
+
+
+% =============================================================================
+% Нумерованные главы: бейдж + одна толстая горизонтальная линия
+% =============================================================================
+
+\titleformat{\chapter}[hang]
+  {%
+    \normalfont\sffamily\bfseries\raggedright\color{xmatrixDark}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\chapterMatrixBadgeE{\chapterBadgeNumber}}
+  {13pt}
+  {\fontsize{24}{28}\selectfont}
+  [\vspace{7.5pt}{\color{chapterRuleColor}\titlerule[1.90pt]}]
+
+
+% =============================================================================
+% Ненумерованные главы: только вертикальная метка, без горизонтальной линии
+% =============================================================================
+
+\titleformat{name=\chapter,numberless}[hang]
+  {%
+    \normalfont\sffamily\bfseries\raggedright\color{xmatrixDark}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\chapterNumberlessMark}
+  {13pt}
+  {\fontsize{24}{28}\selectfont}
+
+
+% =============================================================================
+% Отступы заголовка главы
+% =============================================================================
+
+\titlespacing*{\chapter}{0pt}{10pt plus 2pt minus 2pt}{20pt}

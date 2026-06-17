@@ -1,0 +1,35 @@
+\documentclass[11pt,twoside,openany]{report}
+\newcommand{\PDFBookTitle}{Математический анализ. Часть I}
+\newcommand{\PDFBookAuthor}{X.~Y.~Zettov, И.~И.~Иванов}
+\newcommand{\PDFBookSubject}{Учебник по математическому анализу}
+\newcommand{\PDFBookKeywords}{математический анализ, учебник}
+\input{style/color}
+\input{style/base}
+\input{style/helpers}
+\input{style/block}
+\graphicspath{{images/}}
+\begin{document}
+\input{content/cover.tex}
+\input{content/cover_verso.tex}
+\setcounter{page}{3}
+\tableofcontents
+\clearpage
+\chapter*{Введение}
+    \addcontentsline{toc}{chapter}{Введение}
+    \input{content/intro}
+\chapter{Первая лекция}                                         % Лекция № 01
+    \section*{Введение}
+        \input{content/l-01/0 Введение}
+    \section{Первый раздел}
+        \input{content/l-01/1 Первый раздел}
+    \section{Второй раздел}
+        \input{content/l-01/2 Второй раздел}
+\chapter*{Послесловие}
+    \addcontentsline{toc}{chapter}{Послесловие}
+    \input{content/conclusion}
+\appendix
+\addto\captionsrussian{\renewcommand{\chaptername}{Приложение}}
+\input{content/appendix/styleguide/styleguide}
+\todototoc
+\listoftodos[Список задач и замечаний]
+\end{document}

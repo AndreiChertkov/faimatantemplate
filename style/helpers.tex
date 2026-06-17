@@ -1,0 +1,302 @@
+% -----------------------------------------------------------------------------
+% ВНИМАНИЕ! Все приведённые ниже команды описываются
+% в соответствующих разделах appendix/styleguide
+% -----------------------------------------------------------------------------
+\makeatletter
+
+
+% =============================================================================
+% ---> rules (Общие правила оформления)
+
+\newcommand{\td}[1]{ % Обычная заметка (оранжевая)
+    \todo[inline, color=todobackground, linecolor=todoborder, bordercolor=todoborder]{#1}%
+}
+
+\newcommand{\fx}[1]{ % Важная заметка (красная)
+    \todo[inline, color=xred!20, linecolor=xred, bordercolor=xred]{#1}%
+}
+
+
+% =============================================================================
+% ---> Акценты и штрихи
+
+% ПУСТО
+
+
+% =============================================================================
+% ---> Арифметические операции
+
+\AtBeginDocument{
+  \renewcommand{\le}{\leqslant}
+  \renewcommand{\ge}{\geqslant}
+}
+
+\newcommand{\mul}{\mathbin{\raisebox{0.15ex}{\scalebox{0.6}{$\bullet$}}}}
+
+\newcommand{\inc}{\mathord{{+}\mkern-1.5mu{+}}}
+
+\newcommand{\divby}{\mathrel{\vdots}}
+\newcommand{\ndivby}{\mathrel{\not\vdots}}
+
+\let\oldsqrt\sqrt
+\renewcommand{\sqrt}[2][]{%
+  \ifstrempty{#1}{%
+    \oldsqrt{#2}%
+  }{%
+    \oldsqrt[\leftroot{2}\uproot{2}#1]{#2}%
+  }%
+}
+
+\newcommand{\is}{\coloneqq}
+\newcommand{\isr}{\eqqcolon}
+
+
+% =============================================================================
+% ---> Блоки
+
+\newcommand{\noteicon}{\textcolor{xgray}{\faInfoCircle}\;\,}
+\newlength{\noteiconwidth}
+\newlength{\styletablew}
+
+\newenvironment{styletable}{%
+    \setlength{\styletablew}{\dimexpr\textwidth-6\tabcolsep-4\arrayrulewidth\relax}%
+  \begin{longtable}{%
+    |>{\raggedright\arraybackslash\hyphenpenalty=10000\exhyphenpenalty=10000}p{0.25\styletablew}%
+    |p{0.3\styletablew}%
+    |p{0.45\styletablew}|}
+    \hline
+    \textbf{Описание} & \textbf{Пример} & \textbf{Команда} \\
+    \hline
+    \endfirsthead
+    \hline
+    \textbf{Описание} & \textbf{Пример} & \textbf{Команда} \\
+    \hline
+    \endhead
+    \hline
+    \multicolumn{3}{r}{\footnotesize\itshape\color{xgray}продолжение на следующей странице}\\
+    \endfoot
+    \hline
+    \endlastfoot
+}{%
+    \end{longtable}%
+}
+
+\newenvironment{styletableII}{%
+    \setlength{\styletablew}{\dimexpr\textwidth-4\tabcolsep-3\arrayrulewidth\relax}%
+    \begin{longtable}{|p{0.3\styletablew}|p{0.7\styletablew}|}
+    \hline
+    \textbf{Элемент} & \textbf{Синтаксис} \\
+    \hline
+    \endfirsthead
+    \hline
+    \textbf{Элемент} & \textbf{Синтаксис} \\
+    \hline
+    \endhead
+    \hline
+    \multicolumn{2}{r}{\footnotesize\itshape\color{xgray}продолжение на следующей странице}\\
+    \endfoot
+    \hline
+    \endlastfoot
+}{%
+    \end{longtable}%
+}
+
+% См. также файл block.tex
+
+
+% =============================================================================
+% ---> Выделение
+
+%\newcommand{\foc}[1]{%
+%  \textcolor{xstone!70!black}{\bfseries\underLine{#1}}%
+%}
+\newcommand{\foc}[1]{%
+  \underLine{{\bfseries\color{xstone!70!black}#1}}%
+}
+
+\newcommand{\emp}[1]{%
+  \textbf{\textcolor{xred!70!black}{#1}}%
+}
+
+\newcommand{\stylenote}[1]{%
+  \par\vspace{0.7em}%
+  \noindent
+  \begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=xgray!6,
+    colframe=xgray!40,
+    boxrule=0.4pt,
+    arc=1.5mm,
+    left=2.5mm, right=2.5mm, top=2mm, bottom=2mm,
+    before skip=4mm plus 3mm minus 2mm,
+    after skip=5mm plus 3mm minus 2mm,
+    leftrule=2.5pt,
+    rightrule=0.4pt,
+    toprule=0.4pt,
+    bottomrule=0.4pt,
+    parbox=false,
+    before upper app={%
+      \small
+      \settowidth{\noteiconwidth}{\noteicon}%
+      \setlength{\parindent}{\noteiconwidth}%
+      \setlength{\parskip}{0.5em plus 0.15em minus 0.05em}%
+    },
+  ]
+    \noindent\noteicon #1%
+  \end{tcolorbox}%
+}
+
+
+% =============================================================================
+% ---> Интегралы
+
+% ПУСТО
+
+
+% =============================================================================
+% ---> Логика и кванторы
+
+\newcommand{\im}{\mathrel{\DOTSB\Rightarrow}}
+\newcommand{\eq}{\mathrel{\DOTSB\Leftrightarrow}}
+
+\newcommand{\existso}{\exists!\,}
+
+\newcommand{\qs}{\mathrel{:}}
+
+\AtBeginDocument{%
+  \providecommand{\eqdef}{}%
+  \renewcommand{\eqdef}{\mathrel{\vcentcolon\Leftrightarrow}}%
+}
+\newcommand{\eqdefr}{\mathrel{\Leftrightarrow\vcentcolon}}
+
+
+% =============================================================================
+% ---> Множества
+
+\newcommand{\set}[1]{\left\{ \, #1 \, \right\}}
+\newcommand{\setc}[2]{\left\{ \, #1 \;\middle|\; #2 \, \right\}}
+
+\newcommand{\card}[1]{\left| \, #1 \, \right|}
+
+\AtBeginDocument{\renewcommand{\emptyset}{\varnothing}}
+
+\newcommand{\seg}[2]{\left[#1, \, #2\right]}
+\newcommand{\sego}[2]{\left(#1, \, #2\right)}
+\newcommand{\segor}[2]{\left[#1, \, #2\right)}
+\newcommand{\segol}[2]{\left(#1, \, #2\right]}
+
+\newcommand{\tup}[1]{\left(#1\right)}
+
+
+% =============================================================================
+% ---> Отображения
+
+% ПУСТО
+
+
+% =============================================================================
+% ---> Пределы
+
+\newcommand{\nh}[2][\e]{U_{#1}(#2)}             % Окрестность
+\newcommand{\nhp}[2][\e]{\mathring{U}_{#1}(#2)} % Проколотая окрестность
+
+\newcommand{\appr}[1]{\xrightarrow[#1]{}}       % Предел со стрелкой
+
+\newcommand{\uplim}{\varlimsup\limits}
+\newcommand{\lowlim}{\varliminf\limits}
+
+\DeclareMathOperator{\olandau}{o}
+\newcommand{\so}[1]{\olandau\mathopen{}\left(#1\right)\mathclose{}}
+\DeclareMathOperator{\Olandau}{O}
+\newcommand{\bo}[1]{\Olandau\mathopen{}\left(#1\right)\mathclose{}}
+
+
+% =============================================================================
+% ---> Производные
+
+\newcommand{\dif}{\mathop{}\!\mathrm{d}}
+
+\newcommand{\od}[3][1]{%
+  \ifstrequal{#1}{1}%
+    {\frac{\dif #2}{\dif #3}}%
+    {\frac{\dif^{#1} #2}{\dif #3^{#1}}}%
+}
+
+\newcommand{\pd}[3][1]{%
+  \ifstrequal{#1}{1}%
+    {\frac{\partial #2}{\partial #3}}%
+    {\frac{\partial^{#1} #2}{\partial #3^{#1}}}%
+}
+
+
+% =============================================================================
+% ---> Ряды
+
+% ПУСТО
+
+
+% =============================================================================
+% ---> Символы
+
+\newcommand{\e}{\varepsilon}
+
+\renewcommand{\d}{\delta}
+\newcommand{\D}{\Delta}
+
+\newcommand{\rom}[1]{\text{\MakeUppercase{\expandafter\romannumeral\number#1\relax}}}
+
+
+% =============================================================================
+% ---> Сокращения
+
+\newcommand{\tit}{тогда и только тогда, когда\xspace}
+
+
+% =============================================================================
+% ---> Числовые множества
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Nz}{\mathbb{N}_0}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Rext}{\overline{\mathbb{R}}}
+\newcommand{\C}{\mathbb{C}}
+
+
+% =============================================================================
+% ---> Числовые характеристики
+
+\newcommand{\abs}[1]{\left|{#1}\right|}
+
+\newcommand{\norm}[1]{\lVert{#1}\rVert}
+
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand{\ceil}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\fpart}[1]{\left\{ #1 \right\}}
+
+\DeclareMathOperator{\sgn}{sgn}
+
+\DeclareMathOperator{\Cre}{Re}
+\DeclareMathOperator{\Cim}{Im}
+
+
+% =============================================================================
+% ---> Экстремумы и грани
+
+% ПУСТО
+
+
+% =============================================================================
+% ---> Элементарные функции
+
+\DeclareMathOperator{\tg}{tg}
+\DeclareMathOperator{\ctg}{ctg}
+\DeclareMathOperator{\arctg}{arctg}
+\DeclareMathOperator{\arcctg}{arcctg}
+
+
+% =============================================================================
+\makeatother

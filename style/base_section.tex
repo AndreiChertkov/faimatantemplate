@@ -1,0 +1,234 @@
+% =============================================================================
+% style/base_section.tex
+% =============================================================================
+
+
+% =============================================================================
+% Цвета заголовков разделов
+% =============================================================================
+
+%\colorlet{sectionAccent}{xindigo!78!xblue}
+\colorlet{sectionAccent}{xindigo!55!black}
+\colorlet{sectionAccentDark}{sectionAccent!55!black}
+
+% Цвета номерного бейджа.
+\colorlet{sectionBadgeTop}{sectionAccent!72!black}
+\colorlet{sectionBadgeBottom}{sectionAccent!28!black}
+\colorlet{sectionBadgeFrame}{sectionAccent!38!black}
+\colorlet{sectionBadgeText}{sectionAccent!6!white}
+
+% Цвет заголовка и двух нижних линий.
+\colorlet{sectionTitleColor}{sectionAccentDark}
+\colorlet{sectionRuleA}{sectionAccent!65!white}
+\colorlet{sectionRuleB}{sectionAccent!45!white}
+
+% Две вертикальные линии для ненумерованного section.
+\colorlet{sectionNumberlessLineA}{sectionAccent!65!white}
+\colorlet{sectionNumberlessLineB}{sectionAccent!75!black}
+
+
+% =============================================================================
+% Fading для чистого верхнего блика
+% =============================================================================
+
+\tikzfading[
+  name=sectionGlossFade,
+  top color=transparent!0,
+  bottom color=transparent!100,
+]
+
+
+% =============================================================================
+% Геометрия
+% =============================================================================
+
+\newlength{\sectionBadgeBaselineShift}
+\setlength{\sectionBadgeBaselineShift}{5.2pt}
+
+\newlength{\sectionNumberlessBaselineShift}
+\setlength{\sectionNumberlessBaselineShift}{5.2pt}
+
+
+% =============================================================================
+% Номерной глянцевый бейдж для section
+% =============================================================================
+
+\providecommand{\sectionGlossyBadge}[1]{}
+\renewcommand{\sectionGlossyBadge}[1]{%
+  \tikz[baseline={([yshift=-\sectionBadgeBaselineShift]S.center)}]{%
+    % Невидимый узел задаёт размеры бейджа.
+    \node[
+      minimum width=13.6mm,
+      minimum height=7.8mm,
+      inner xsep=4.4pt,
+      inner ysep=1.3pt,
+      outer sep=0pt,
+      font=\sffamily\bfseries\fontsize{10.8}{12}\selectfont
+    ] (S) {\phantom{\strut #1}};
+
+    % Внешняя тень.
+    \begin{scope}[xshift=0.38mm, yshift=-0.46mm]
+      \path[
+        fill=black,
+        opacity=0.16,
+        rounded corners=2.0pt,
+      ]
+        (S.south west) rectangle (S.north east);
+    \end{scope}
+
+    % Основная заливка: чистый вертикальный градиент.
+    \shade[
+      top color=sectionBadgeTop,
+      bottom color=sectionBadgeBottom,
+      draw=sectionBadgeFrame,
+      line width=0.58pt,
+      rounded corners=2.0pt,
+    ]
+      (S.south west) rectangle (S.north east);
+
+    % Верхний глянцевый блик: плавно исчезает к середине бейджа.
+    \begin{scope}
+      \clip[rounded corners=2.0pt]
+        (S.south west) rectangle (S.north east);
+      \path[
+        fill=white,
+        path fading=sectionGlossFade,
+        opacity=0.52,
+      ]
+        ([yshift=-0.18mm]S.north west) rectangle
+        ([yshift=-0.18mm]S.east);
+    \end{scope}
+
+    % Верхний внутренний световой кант.
+    \begin{scope}
+      \clip[rounded corners=2.0pt]
+        (S.south west) rectangle (S.north east);
+      \draw[
+        white,
+        opacity=0.55,
+        line width=0.40pt,
+        line cap=round,
+      ]
+        ([xshift=1.1mm, yshift=-0.38mm]S.north west) --
+        ([xshift=-1.1mm, yshift=-0.38mm]S.north east);
+    \end{scope}
+
+    % Нижний внутренний теневой кант.
+    \begin{scope}
+      \clip[rounded corners=2.0pt]
+        (S.south west) rectangle (S.north east);
+      \draw[
+        black,
+        opacity=0.20,
+        line width=0.38pt,
+        line cap=round,
+      ]
+        ([xshift=1.1mm, yshift=0.40mm]S.south west) --
+        ([xshift=-1.1mm, yshift=0.40mm]S.south east);
+    \end{scope}
+
+    % Обводка поверх бликов.
+    \path[
+      draw=sectionBadgeFrame,
+      line width=0.58pt,
+      rounded corners=2.0pt,
+    ]
+      (S.south west) rectangle (S.north east);
+
+    % Номер section.
+    \node[
+      minimum width=13.6mm,
+      minimum height=7.8mm,
+      inner xsep=4.4pt,
+      inner ysep=1.3pt,
+      outer sep=0pt,
+      text=sectionBadgeText,
+      font=\sffamily\bfseries\fontsize{10.8}{12}\selectfont,
+    ] at (S.center) {\strut #1};
+  }%
+}
+
+
+% =============================================================================
+% Метка ненумерованного section: две вертикальные линии
+% =============================================================================
+
+\providecommand{\sectionNumberlessMark}{}
+\renewcommand{\sectionNumberlessMark}{%
+  \tikz[baseline={([yshift=-\sectionNumberlessBaselineShift]S.center)}]{%
+    \node[
+      minimum width=5.0mm,
+      minimum height=7.8mm,
+      inner sep=0pt,
+      outer sep=0pt
+    ] (S) {};
+
+    \draw[
+      sectionNumberlessLineA,
+      line width=1.30pt,
+      line cap=round,
+    ]
+      ([xshift=1.4mm, yshift=-0.2mm]S.north west) --
+      ([xshift=1.4mm, yshift=0.2mm]S.south west);
+
+    \draw[
+      sectionNumberlessLineB,
+      line width=1.50pt,
+      line cap=round,
+    ]
+      ([xshift=3.1mm, yshift=-0.2mm]S.north west) --
+      ([xshift=3.1mm, yshift=0.2mm]S.south west);
+  }%
+}
+
+
+% =============================================================================
+% Две линии под нумерованным section
+% =============================================================================
+
+\providecommand{\sectionDoubleRule}{}
+\renewcommand{\sectionDoubleRule}{%
+  \vspace{3.0pt}%
+  {\color{sectionRuleA}\titlerule[1.00pt]}%
+  \vspace{1.25pt}%
+  {\color{sectionRuleB}\titlerule[0.65pt]}%
+}
+
+
+% =============================================================================
+% Нумерованные section: бейдж + две горизонтальные линии
+% =============================================================================
+
+\titleformat{\section}[hang]
+  {%
+    \normalfont\sffamily\bfseries\raggedright\color{sectionTitleColor}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\sectionGlossyBadge{\thesection}}
+  {10pt}
+  {\fontsize{18}{22}\selectfont}
+  [\sectionDoubleRule]
+
+
+% =============================================================================
+% Ненумерованные section: только вертикальная метка, без горизонтальных линий
+% =============================================================================
+
+\titleformat{name=\section,numberless}[hang]
+  {%
+    \normalfont\sffamily\bfseries\raggedright\color{sectionTitleColor}%
+    \hyphenpenalty=10000\exhyphenpenalty=10000%
+  }
+  {\sectionNumberlessMark}
+  {10pt}
+  {\fontsize{18}{22}\selectfont}
+
+
+% =============================================================================
+% Отступы section
+% =============================================================================
+
+\titlespacing*{\section}
+  {0pt}
+  {5.7ex plus 1.8ex minus 1.4ex}
+  {2.6ex plus 0.6ex minus 0.5ex}
