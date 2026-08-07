@@ -1,8 +1,10 @@
 """Сборка книги с использованием LuaLaTeX.
 
 Возможности:
+    * По исходным LaTeX-файлам автоматически формируется карта блоков map.md.
     * По умолчанию выполняется два прохода LuaLaTeX.
-    * Перед сборкой локальная папка со стилями (опционально) обновляется из внешнего репозитория. Если внешняя папка со стилями отсутствует, используются локальные стили.
+    * Перед сборкой локальная папка со стилями (опционально) обновляется из внешнего репозитория.
+    * Если внешняя папка со стилями отсутствует, используются локальные стили.
     * При ошибке на любом проходе сборка немедленно прекращается.
     * Вывод LuaLaTeX скрывается, вместо него показывается индикатор прогресса.
     * Из файла журнала извлекаются ошибки и полезные предупреждения.
@@ -27,7 +29,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 # =============================================================================
@@ -49,6 +51,85 @@ LOCAL_STYLE_DIR = Path("style")
 # Внешняя папка со стилями из репозитория шаблона.
 # Относительный путь отсчитывается от корневой папки проекта.
 EXTERNAL_STYLE_DIR = Path("../_repo/faimatantemplate/style")
+
+
+# =============================================================================
+# Настройки карты содержания
+# =============================================================================
+
+# Заголовок первого уровня в автоматически формируемой карте.
+CONTENT_MAP_TITLE = "Содержание книги"
+
+# Файл автоматически формируемой карты.
+CONTENT_MAP_FILE = "map.md"
+
+# Команды блоков и их сигнатуры:
+# mandatory — число обязательных аргументов;
+# trailing_optional — максимальное число необязательных аргументов после них;
+# title_index — индекс аргумента с заголовком блока;
+# initial_options — допускается ли необязательный аргумент с параметрами блока.
+BLOCK_SIGNATURES: Dict[str, Dict[str, object]] = {
+    "defi": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "stat": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "lemm": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "theo": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "conc": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "exam": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "note": {
+        "mandatory": 3,
+        "trailing_optional": 0,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "algo": {
+        "mandatory": 3,
+        "trailing_optional": 2,
+        "title_index": 1,
+        "initial_options": True,
+    },
+    "code": {
+        "mandatory": 3,
+        "trailing_optional": 1,
+        "title_index": 1,
+        "initial_options": False,
+    },
+    "task": {
+        "mandatory": 2,
+        "trailing_optional": 2,
+        "title_index": None,
+        "initial_options": False,
+    },
+}
 
 
 # =============================================================================
@@ -156,6 +237,7 @@ UTF = "utf" in (sys.stdout.encoding or "").lower()
 TEX_PATH = PROJECT_DIR / TEX_FILE
 LOG_PATH = TEX_PATH.with_suffix(".log")
 PDF_PATH = TEX_PATH.with_suffix(".pdf")
+CONTENT_MAP_PATH = PROJECT_DIR / CONTENT_MAP_FILE
 
 
 # =============================================================================
@@ -296,6 +378,850 @@ def sync_styles() -> bool:
 
 
 # =============================================================================
+# Структуры карты содержания
+# =============================================================================
+
+@dataclass
+class ContentMapBlock:
+    """Блок учебника, добавляемый в карту содержания."""
+
+    kind: str
+    label: str
+    title: str = ""
+    optional_mark: str = ""
+
+
+@dataclass
+class ContentMapSubsection:
+    """Подраздел четвёртого уровня в карте содержания."""
+
+    title: str
+    blocks: List[ContentMapBlock] = field(default_factory=list)
+
+
+@dataclass
+class ContentMapSection:
+    """Раздел главы в карте содержания."""
+
+    title: str
+    number: str = ""
+    blocks: List[ContentMapBlock] = field(default_factory=list)
+    subsections: List[ContentMapSubsection] = field(default_factory=list)
+
+
+@dataclass
+class ContentMapChapter:
+    """Глава книги в карте содержания."""
+
+    title: str
+    number: str = ""
+    blocks: List[ContentMapBlock] = field(default_factory=list)
+    sections: List[ContentMapSection] = field(default_factory=list)
+
+
+@dataclass
+class ContentMapDocument:
+    """Полная древовидная структура карты содержания."""
+
+    blocks: List[ContentMapBlock] = field(default_factory=list)
+    chapters: List[ContentMapChapter] = field(default_factory=list)
+
+
+class ContentMapError(RuntimeError):
+    """Ошибка при построении карты содержания."""
+
+
+# =============================================================================
+# Разбор LaTeX для построения карты содержания
+# =============================================================================
+
+RE_TEX_COMMAND = re.compile(r"\\([A-Za-z@]+)")
+RE_BEGIN_DOCUMENT = re.compile(r"\\begin\s*\{\s*document\s*\}")
+RE_END_DOCUMENT = re.compile(r"\\end\s*\{\s*document\s*\}")
+
+
+def normalize_tex_text(text: str) -> str:
+    """Сворачивает пробельные символы LaTeX-фрагмента в одиночные пробелы."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def skip_whitespace(text: str, position: int) -> int:
+    """Пропускает пробельные символы, начиная с заданной позиции."""
+    while position < len(text) and text[position].isspace():
+        position += 1
+    return position
+
+
+def skip_tex_verb(text: str, position: int) -> Optional[int]:
+    """Возвращает позицию после конструкции \\verb или None, если её нет."""
+    if not text.startswith(r"\verb", position):
+        return None
+
+    command_end = position + len(r"\verb")
+
+    if command_end < len(text) and text[command_end].isalpha():
+        return None
+
+    if command_end < len(text) and text[command_end] == "*":
+        command_end += 1
+
+    if command_end >= len(text):
+        return None
+
+    delimiter = text[command_end]
+
+    if delimiter.isspace():
+        return None
+
+    closing_position = text.find(delimiter, command_end + 1)
+
+    if closing_position == -1:
+        return len(text)
+
+    return closing_position + 1
+
+
+def is_escaped(text: str, position: int) -> bool:
+    """Проверяет, экранирован ли символ в заданной позиции обратной косой чертой."""
+    backslashes = 0
+    index = position - 1
+
+    while index >= 0 and text[index] == "\\":
+        backslashes += 1
+        index -= 1
+
+    return backslashes % 2 == 1
+
+
+def strip_tex_comments(text: str) -> str:
+    """Удаляет LaTeX-комментарии, сохраняя переводы строк."""
+    result: List[str] = []
+    position = 0
+
+    while position < len(text):
+        verb_end = skip_tex_verb(text, position)
+
+        if verb_end is not None:
+            result.append(text[position:verb_end])
+            position = verb_end
+            continue
+
+        if text[position] == "%" and not is_escaped(text, position):
+            newline_position = text.find("\n", position)
+
+            if newline_position == -1:
+                break
+
+            result.append("\n")
+            position = newline_position + 1
+            continue
+
+        result.append(text[position])
+        position += 1
+
+    return "".join(result)
+
+
+def read_tex_group(
+    text: str,
+    position: int,
+    opener: str,
+    closer: str,
+) -> Tuple[str, int]:
+    """Читает сбалансированную группу в фигурных или квадратных скобках."""
+    position = skip_whitespace(text, position)
+
+    if position >= len(text) or text[position] != opener:
+        raise ValueError(f"ожидался символ {opener!r}")
+
+    content_start = position + 1
+    index = content_start
+
+    if opener == "{":
+        depth = 1
+
+        while index < len(text):
+            verb_end = skip_tex_verb(text, index)
+
+            if verb_end is not None:
+                index = verb_end
+                continue
+
+            if text[index] == "\\":
+                if index + 1 < len(text) and text[index + 1] in "{}[]%\\":
+                    index += 2
+                else:
+                    index += 1
+                continue
+
+            if text[index] == opener:
+                depth += 1
+            elif text[index] == closer:
+                depth -= 1
+
+                if depth == 0:
+                    return text[content_start:index], index + 1
+
+            index += 1
+
+        raise ValueError("не найдена закрывающая фигурная скобка")
+
+    square_depth = 1
+    brace_depth = 0
+
+    while index < len(text):
+        verb_end = skip_tex_verb(text, index)
+
+        if verb_end is not None:
+            index = verb_end
+            continue
+
+        if text[index] == "\\":
+            if index + 1 < len(text) and text[index + 1] in "{}[]%\\":
+                index += 2
+            else:
+                index += 1
+            continue
+
+        if text[index] == "{":
+            brace_depth += 1
+        elif text[index] == "}" and brace_depth > 0:
+            brace_depth -= 1
+        elif brace_depth == 0 and text[index] == opener:
+            square_depth += 1
+        elif brace_depth == 0 and text[index] == closer:
+            square_depth -= 1
+
+            if square_depth == 0:
+                return text[content_start:index], index + 1
+
+        index += 1
+
+    raise ValueError("не найдена закрывающая квадратная скобка")
+
+
+def split_top_level_commas(text: str) -> List[str]:
+    """Разделяет строку по запятым, находящимся вне фигурных скобок."""
+    parts: List[str] = []
+    start = 0
+    depth = 0
+
+    for index, character in enumerate(text):
+        if character == "{" and not is_escaped(text, index):
+            depth += 1
+        elif character == "}" and not is_escaped(text, index):
+            depth = max(0, depth - 1)
+        elif character == "," and depth == 0:
+            parts.append(text[start:index].strip())
+            start = index + 1
+
+    parts.append(text[start:].strip())
+    return [part for part in parts if part]
+
+
+def integer_to_letters(value: int) -> str:
+    """Преобразует положительное число в буквенное обозначение приложения."""
+    if value < 1:
+        return "A"
+
+    result = ""
+
+    while value > 0:
+        value -= 1
+        result = chr(ord("A") + value % 26) + result
+        value //= 26
+
+    return result
+
+
+def detect_optional_mark(options: str) -> str:
+    """Определяет отметку дополнительного блока или необязательного доказательства."""
+    if not options.strip():
+        return ""
+
+    optional_parts: List[str] = []
+
+    for option in split_top_level_commas(options):
+        compact_option = re.sub(r"\s+", "", option)
+
+        if compact_option == "optional":
+            return "доп материал"
+
+        if not compact_option.startswith("optional="):
+            continue
+
+        value = compact_option.split("=", 1)[1]
+
+        if value.startswith("{") and value.endswith("}"):
+            value = value[1:-1]
+
+        optional_parts.extend(
+            part
+            for part in value.split(",")
+            if part
+        )
+
+    if "block" in optional_parts:
+        return "доп материал"
+
+    if "proof" in optional_parts:
+        return "без док-ва"
+
+    return ""
+
+
+class ContentMapParser:
+    """Рекурсивно разбирает структуру книги и формирует дерево карты."""
+
+    def __init__(self, project_dir: Path) -> None:
+        self.project_dir = project_dir.resolve()
+        self.document = ContentMapDocument()
+
+        self.current_chapter: Optional[ContentMapChapter] = None
+        self.current_section: Optional[ContentMapSection] = None
+        self.current_subsection: Optional[ContentMapSubsection] = None
+
+        self.chapter_counter = 0
+        self.section_counter = 0
+        self.appendix_mode = False
+
+        self.active_files: List[Path] = []
+        self.block_count = 0
+
+    def parse(self, main_file: Path) -> ContentMapDocument:
+        """Разбирает главный файл книги."""
+        self._parse_file(main_file.resolve(), document_only=True)
+        return self.document
+
+    def _parse_file(self, path: Path, document_only: bool = False) -> None:
+        """Разбирает один LaTeX-файл и рекурсивно обрабатывает его включения."""
+        if path in self.active_files:
+            chain = " -> ".join(str(item) for item in [*self.active_files, path])
+            raise ContentMapError(
+                f"обнаружено циклическое включение файлов: {chain}"
+            )
+
+        if not path.is_file():
+            raise ContentMapError(f"не найден LaTeX-файл: {path}")
+
+        try:
+            raw_text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            raise ContentMapError(
+                f"не удалось прочитать файл {path}: {error}"
+            ) from error
+
+        text = strip_tex_comments(raw_text)
+
+        if document_only:
+            begin_match = RE_BEGIN_DOCUMENT.search(text)
+
+            if begin_match is None:
+                raise ContentMapError(
+                    f"в главном файле {path} не найдено окружение document"
+                )
+
+            text = text[begin_match.end():]
+            end_match = RE_END_DOCUMENT.search(text)
+
+            if end_match is not None:
+                text = text[:end_match.start()]
+
+        self.active_files.append(path)
+
+        try:
+            self._parse_text(text, path)
+        finally:
+            self.active_files.pop()
+
+    def _parse_text(self, text: str, source_path: Path) -> None:
+        """Последовательно разбирает команды в LaTeX-тексте."""
+        position = 0
+
+        while position < len(text):
+            command_position = text.find("\\", position)
+
+            if command_position == -1:
+                break
+
+            verb_end = skip_tex_verb(text, command_position)
+
+            if verb_end is not None:
+                position = verb_end
+                continue
+
+            command_match = RE_TEX_COMMAND.match(text, command_position)
+
+            if command_match is None:
+                position = command_position + 1
+                continue
+
+            command = command_match.group(1)
+            cursor = command_match.end()
+
+            if command in {"input", "include"}:
+                position = self._parse_input(
+                    text,
+                    cursor,
+                    source_path,
+                    command_position,
+                )
+                continue
+
+            if command == "appendix":
+                self.appendix_mode = True
+                self.chapter_counter = 0
+                self.section_counter = 0
+                position = cursor
+                continue
+
+            if command == "chapter":
+                starred, title, position = self._parse_heading(
+                    text,
+                    cursor,
+                    source_path,
+                    command_position,
+                )
+                self._start_chapter(title, starred)
+                continue
+
+            if command == "section":
+                starred, title, position = self._parse_heading(
+                    text,
+                    cursor,
+                    source_path,
+                    command_position,
+                )
+                self._start_section(title, starred, source_path, command_position)
+                continue
+
+            if command == "subsection":
+                _, title, position = self._parse_heading(
+                    text,
+                    cursor,
+                    source_path,
+                    command_position,
+                )
+                self._start_subsection(title, source_path, command_position)
+                continue
+
+            if command in BLOCK_SIGNATURES:
+                position = self._parse_block(
+                    command,
+                    text,
+                    cursor,
+                    source_path,
+                    command_position,
+                )
+                continue
+
+            position = cursor
+
+    def _parse_heading(
+        self,
+        text: str,
+        cursor: int,
+        source_path: Path,
+        command_position: int,
+    ) -> Tuple[bool, str, int]:
+        """Разбирает заголовок chapter, section или subsection."""
+        cursor = skip_whitespace(text, cursor)
+        starred = False
+
+        if cursor < len(text) and text[cursor] == "*":
+            starred = True
+            cursor += 1
+
+        cursor = skip_whitespace(text, cursor)
+
+        try:
+            if cursor < len(text) and text[cursor] == "[":
+                _, cursor = read_tex_group(text, cursor, "[", "]")
+
+            title, cursor = read_tex_group(text, cursor, "{", "}")
+        except ValueError as error:
+            self._raise_parse_error(
+                source_path,
+                text,
+                command_position,
+                str(error),
+            )
+
+        return starred, normalize_tex_text(title), cursor
+
+    def _parse_input(
+        self,
+        text: str,
+        cursor: int,
+        source_path: Path,
+        command_position: int,
+    ) -> int:
+        """Разбирает команду input или include и обрабатывает указанный файл."""
+        try:
+            input_name, cursor = read_tex_group(text, cursor, "{", "}")
+        except ValueError as error:
+            self._raise_parse_error(
+                source_path,
+                text,
+                command_position,
+                str(error),
+            )
+
+        input_path = self._resolve_input_path(
+            normalize_tex_text(input_name),
+            source_path,
+        )
+        self._parse_file(input_path)
+        return cursor
+
+    def _resolve_input_path(
+        self,
+        input_name: str,
+        source_path: Path,
+    ) -> Path:
+        """Разрешает путь к файлу, указанному в input или include."""
+        if not input_name:
+            raise ContentMapError(
+                f"в файле {source_path} указана пустая команда input"
+            )
+
+        if "\\" in input_name:
+            raise ContentMapError(
+                f"динамический путь в команде input не поддерживается: {input_name}"
+            )
+
+        raw_path = Path(input_name)
+
+        if raw_path.suffix == "":
+            raw_path = raw_path.with_suffix(".tex")
+
+        candidates: List[Path] = []
+
+        if raw_path.is_absolute():
+            candidates.append(raw_path)
+        else:
+            candidates.append(self.project_dir / raw_path)
+            candidates.append(source_path.parent / raw_path)
+
+        for candidate in candidates:
+            resolved_candidate = candidate.resolve()
+
+            if resolved_candidate.is_file():
+                return resolved_candidate
+
+        candidate_list = ", ".join(str(candidate.resolve()) for candidate in candidates)
+        raise ContentMapError(
+            f"не найден файл из команды input: {input_name}; проверены пути: {candidate_list}"
+        )
+
+    def _parse_block(
+        self,
+        command: str,
+        text: str,
+        cursor: int,
+        source_path: Path,
+        command_position: int,
+    ) -> int:
+        """Разбирает один блок учебника."""
+        signature = BLOCK_SIGNATURES[command]
+
+        mandatory_count = int(signature["mandatory"])
+        trailing_optional_count = int(signature["trailing_optional"])
+        title_index = signature["title_index"]
+        initial_options_allowed = bool(signature["initial_options"])
+
+        cursor = skip_whitespace(text, cursor)
+
+        if cursor < len(text) and text[cursor] == "*":
+            cursor += 1
+
+        cursor = skip_whitespace(text, cursor)
+        options = ""
+
+        try:
+            if (
+                initial_options_allowed
+                and cursor < len(text)
+                and text[cursor] == "["
+            ):
+                options, cursor = read_tex_group(text, cursor, "[", "]")
+
+            arguments: List[str] = []
+
+            for _ in range(mandatory_count):
+                argument, cursor = read_tex_group(text, cursor, "{", "}")
+                arguments.append(argument)
+
+            for _ in range(trailing_optional_count):
+                optional_cursor = skip_whitespace(text, cursor)
+
+                if (
+                    optional_cursor >= len(text)
+                    or text[optional_cursor] != "["
+                ):
+                    break
+
+                _, cursor = read_tex_group(
+                    text,
+                    optional_cursor,
+                    "[",
+                    "]",
+                )
+        except ValueError as error:
+            self._raise_parse_error(
+                source_path,
+                text,
+                command_position,
+                f"не удалось разобрать блок \\{command}: {error}",
+            )
+
+        label = normalize_tex_text(arguments[0])
+        title = ""
+
+        if isinstance(title_index, int):
+            title = normalize_tex_text(arguments[title_index])
+
+        block = ContentMapBlock(
+            kind=command,
+            label=label,
+            title=title,
+            optional_mark=detect_optional_mark(options),
+        )
+
+        self._add_block(block)
+        self.block_count += 1
+        return cursor
+
+    def _start_chapter(self, title: str, starred: bool) -> None:
+        """Добавляет в дерево новую главу."""
+        number = ""
+
+        if not starred:
+            self.chapter_counter += 1
+            self.section_counter = 0
+
+            if self.appendix_mode:
+                number = integer_to_letters(self.chapter_counter)
+            else:
+                number = str(self.chapter_counter)
+
+        chapter = ContentMapChapter(
+            title=title,
+            number=number,
+        )
+
+        self.document.chapters.append(chapter)
+        self.current_chapter = chapter
+        self.current_section = None
+        self.current_subsection = None
+
+    def _start_section(
+        self,
+        title: str,
+        starred: bool,
+        source_path: Path,
+        command_position: int,
+    ) -> None:
+        """Добавляет в текущую главу новый раздел."""
+        if self.current_chapter is None:
+            raise ContentMapError(
+                f"раздел вне главы: {source_path}:{self._line_number(source_path, command_position)}"
+            )
+
+        number = ""
+
+        if not starred:
+            self.section_counter += 1
+
+            if self.appendix_mode:
+                chapter_number = integer_to_letters(self.chapter_counter)
+            else:
+                chapter_number = str(self.chapter_counter)
+
+            number = f"{chapter_number}.{self.section_counter}"
+
+        section = ContentMapSection(
+            title=title,
+            number=number,
+        )
+
+        self.current_chapter.sections.append(section)
+        self.current_section = section
+        self.current_subsection = None
+
+    def _start_subsection(
+        self,
+        title: str,
+        source_path: Path,
+        command_position: int,
+    ) -> None:
+        """Добавляет в текущий раздел новый подраздел."""
+        if self.current_section is None:
+            raise ContentMapError(
+                f"подраздел вне раздела: {source_path}:{self._line_number(source_path, command_position)}"
+            )
+
+        subsection = ContentMapSubsection(title=title)
+        self.current_section.subsections.append(subsection)
+        self.current_subsection = subsection
+
+    def _add_block(self, block: ContentMapBlock) -> None:
+        """Добавляет блок в текущий элемент иерархии."""
+        if self.current_subsection is not None:
+            self.current_subsection.blocks.append(block)
+        elif self.current_section is not None:
+            self.current_section.blocks.append(block)
+        elif self.current_chapter is not None:
+            self.current_chapter.blocks.append(block)
+        else:
+            self.document.blocks.append(block)
+
+    def _raise_parse_error(
+        self,
+        source_path: Path,
+        text: str,
+        position: int,
+        message: str,
+    ) -> None:
+        """Возбуждает исключение с указанием файла и строки."""
+        line_number = text.count("\n", 0, position) + 1
+        raise ContentMapError(
+            f"{source_path}:{line_number}: {message}"
+        )
+
+    @staticmethod
+    def _line_number(source_path: Path, position: int) -> int:
+        """Возвращает приблизительный номер строки для структурной ошибки."""
+        try:
+            text = source_path.read_text(encoding="utf-8")
+        except OSError:
+            return 0
+
+        return text.count("\n", 0, position) + 1
+
+
+# =============================================================================
+# Формирование Markdown-карты
+# =============================================================================
+
+def append_map_heading(
+    lines: List[str],
+    level: int,
+    title: str,
+    blank_lines: int,
+) -> None:
+    """Добавляет Markdown-заголовок с заданным числом пустых строк перед ним."""
+    if lines:
+        lines.extend([""] * blank_lines)
+
+    lines.append(f"{'#' * level} {title}")
+
+
+def append_map_block(
+    lines: List[str],
+    block: ContentMapBlock,
+) -> None:
+    """Добавляет в Markdown-карту описание одного блока."""
+    block_name = block.kind
+
+    if block.optional_mark:
+        block_name += f" [* {block.optional_mark}]"
+
+    if block.label:
+        lines.append(f"- {block_name}: {block.label}")
+    else:
+        lines.append(f"- {block_name}:")
+
+    if block.title:
+        lines.append(f"    > {block.title}")
+
+
+def render_content_map(document: ContentMapDocument) -> str:
+    """Преобразует дерево карты содержания в Markdown."""
+    lines = [f"# {CONTENT_MAP_TITLE}"]
+
+    for block in document.blocks:
+        append_map_block(lines, block)
+
+    for chapter in document.chapters:
+        chapter_title = chapter.title
+
+        if chapter.number:
+            chapter_title = f"{chapter.number}. {chapter_title}"
+
+        append_map_heading(
+            lines,
+            level=2,
+            title=chapter_title,
+            blank_lines=3,
+        )
+
+        for block in chapter.blocks:
+            append_map_block(lines, block)
+
+        for section in chapter.sections:
+            section_title = section.title
+
+            if section.number:
+                section_title = f"{section.number}. {section_title}"
+
+            append_map_heading(
+                lines,
+                level=3,
+                title=section_title,
+                blank_lines=2,
+            )
+
+            for block in section.blocks:
+                append_map_block(lines, block)
+
+            for subsection in section.subsections:
+                append_map_heading(
+                    lines,
+                    level=4,
+                    title=subsection.title,
+                    blank_lines=1,
+                )
+
+                for block in subsection.blocks:
+                    append_map_block(lines, block)
+
+    return "\n".join(lines) + "\n"
+
+
+def build_content_map() -> int:
+    """Строит карту содержания и записывает её в map.md."""
+    parser = ContentMapParser(PROJECT_DIR)
+    document = parser.parse(TEX_PATH)
+    content = render_content_map(document)
+
+    temporary_path = CONTENT_MAP_PATH.with_suffix(
+        CONTENT_MAP_PATH.suffix + ".tmp"
+    )
+
+    try:
+        with temporary_path.open(
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as file:
+            file.write(content)
+        temporary_path.replace(CONTENT_MAP_PATH)
+    except OSError as error:
+        try:
+            if temporary_path.exists():
+                temporary_path.unlink()
+        except OSError:
+            pass
+
+        raise ContentMapError(
+            f"не удалось записать файл {CONTENT_MAP_PATH}: {error}"
+        ) from error
+
+    return parser.block_count
+
+
+# =============================================================================
 # Структуры диагностических сообщений
 # =============================================================================
 
@@ -378,6 +1304,7 @@ def parse_log(log_path: Path) -> Tuple[List[LogError], List[LogWarning]]:
         details: str = "",
     ) -> None:
         key = (kind, message, line, details)
+
         if key in seen_warnings:
             return
 
@@ -476,6 +1403,7 @@ def parse_log(log_path: Path) -> Tuple[List[LogError], List[LogWarning]]:
 
             if lines_match:
                 line_range = lines_match.group(1)
+
                 if lines_match.group(2):
                     line_range += f"–{lines_match.group(2)}"
 
@@ -594,6 +1522,7 @@ def print_errors(errors: List[LogError]) -> None:
 
         for context_line in error.context:
             stripped_line = context_line.strip()
+
             if stripped_line:
                 print(f"      {c(DIM, stripped_line)}")
 
@@ -961,6 +1890,31 @@ def main() -> int:
             success=False,
         )
         return 1
+
+    try:
+        block_count = build_content_map()
+    except ContentMapError as error:
+        print(c(RED + BOLD, "  Не удалось сформировать карту содержания."))
+        print(c(RED, f"  Причина: {error}\n"))
+
+        notify(
+            "LaTeX: ошибка карты содержания",
+            "Не удалось сформировать map.md",
+            success=False,
+        )
+        return 1
+
+    print(
+        c(
+            GREEN,
+            (
+                f"  Карта содержания обновлена: "
+                f"{CONTENT_MAP_PATH.relative_to(PROJECT_DIR)} "
+                f"(блоков: {block_count})"
+            ),
+        )
+    )
+    print()
 
     total_elapsed = 0.0
     warnings: List[LogWarning] = []
