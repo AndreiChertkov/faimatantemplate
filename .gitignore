@@ -41,3 +41,4 @@ _minted*/
 *.pyg
 _minted-*/
 *.stripped
+book.pdf

@@ -25,7 +25,7 @@
         {\small
             \settowidth{\noteiconwidth}{\noteicon}%
             \setlength{\parindent}{\noteiconwidth}%
-            \noindent\noteicon\itshape\color{black!80}#1\par
+            \noindent\blockPrintRemarkOptionalMark\blockRemarkIcon\itshape\color{black!80}#1\par
         }%
     \fi
 }
@@ -35,7 +35,7 @@
         \boxsepline
         \begingroup
             \pushQED{\qed}%
-            \textbf{Доказательство.}\ #1\unskip\popQED\par
+            \blockPrintProofOptionalMark\blockProofTitle\ #1\unskip\popQED\par
         \endgroup
     \fi%
 }
@@ -59,6 +59,15 @@
   \fi
 }
 
+\newcommand{\printTaskAnswer}[1]{%
+    \if\relax\detokenize{#1}\relax\else
+        \boxsepline
+        \begingroup
+            \noindent{\sffamily\bfseries\color{taskanswercolor}Ответ:}\ #1\unskip\par
+        \endgroup
+    \fi
+}
+
 \newcommand{\printOutput}[1]{%
     \if\relax\detokenize{#1}\relax\else
         \boxsepline
@@ -75,8 +84,244 @@
 
 
 % =============================================================================
+% ОПЦИОНАЛЬНОСТЬ БЛОКОВ И ИХ ЧАСТЕЙ
+% =============================================================================
+
+\newif\ifblockOptional
+\newif\ifblockProofOptional
+\newif\ifblockRemarkOptional
+
+\newcommand{\blockResetOptionality}{%
+    \blockOptionalfalse
+    \blockProofOptionalfalse
+    \blockRemarkOptionalfalse
+}
+
+\ExplSyntaxOn
+
+\cs_new_protected:Npn \block_enable_optional_part:n #1
+{
+    \str_case_e:nnF
+        { \tl_trim_spaces:n {#1} }
+        {
+            {block}  {\blockOptionaltrue}
+            {proof}  {\blockProofOptionaltrue}
+            {note}   {\blockRemarkOptionaltrue}
+            {remark} {\blockRemarkOptionaltrue}
+        }
+        {
+            \PackageWarning{essence}
+                {Unknown optional block part `#1'}
+        }
+}
+
+\NewDocumentCommand{\blockEnableOptionalParts}{m}
+{
+    \clist_map_inline:nn {#1}
+        {\block_enable_optional_part:n {##1}}
+}
+
+\ExplSyntaxOff
+
+\pgfkeys{
+    /essence/block/.is family,
+    /essence/block,
+    optional/.code={\blockEnableOptionalParts{#1}},
+    optional/.default=block,
+}
+
+\newcommand{\blockApplyOptions}[1]{%
+    \blockResetOptionality
+    \ifstrempty{#1}{}{%
+        \pgfkeys{/essence/block/.cd,#1}%
+    }%
+}
+
+
+% =============================================================================
+% МАРКЕРЫ ОПЦИОНАЛЬНОСТИ
+% =============================================================================
+
+% Расстояние от внешнего края звёздочки до физического края страницы.
+\newlength{\blockOptionalMarkPageInset}
+\setlength{\blockOptionalMarkPageInset}{4.5mm}
+
+% Внешнее поле страницы должно соответствовать параметру outer в geometry.
+\newlength{\blockOptionalMarkOuterMargin}
+\setlength{\blockOptionalMarkOuterMargin}{20mm}
+
+% Расстояние от внешней границы полноширинного блока до внешнего края звёздочки.
+\newlength{\blockOptionalMarkFrameShift}
+\setlength{\blockOptionalMarkFrameShift}{\dimexpr\blockOptionalMarkOuterMargin-\blockOptionalMarkPageInset\relax}
+
+\tikzfading[
+    name=blockOptionalGlossFade,
+    top color=transparent!0,
+    bottom color=transparent!100,
+]
+
+\newcommand{\blockOptionalStarPath}[1]{%
+    ($(#1)+(90:3.05mm)$) --
+    ($(#1)+(54:1.35mm)$) --
+    ($(#1)+(18:3.05mm)$) --
+    ($(#1)+(-18:1.35mm)$) --
+    ($(#1)+(-54:3.05mm)$) --
+    ($(#1)+(-90:1.35mm)$) --
+    ($(#1)+(-126:3.05mm)$) --
+    ($(#1)+(-162:1.35mm)$) --
+    ($(#1)+(162:3.05mm)$) --
+    ($(#1)+(126:1.35mm)$) --
+    cycle%
+}
+
+\newcommand{\blockOptionalStar}{%
+    \tikz[baseline=(S.center)]{%
+        \node[
+            minimum width=7.2mm,
+            minimum height=7.2mm,
+            inner sep=0pt,
+            outer sep=0pt,
+        ] (S) {};
+        \coordinate (C) at (S.center);
+        \begin{scope}[xshift=0.35mm, yshift=-0.42mm]
+            \path[
+                fill=black,
+                opacity=0.18,
+                line join=round,
+            ]
+                \blockOptionalStarPath{C};
+        \end{scope}
+        \shade[
+            top color=optionalmarkstarTop,
+            bottom color=optionalmarkstarBottom,
+            draw=optionalmarkstarFrame,
+            line width=0.45pt,
+            line join=round,
+        ]
+            \blockOptionalStarPath{C};
+        \begin{scope}
+            \clip
+                \blockOptionalStarPath{C};
+            \path[
+                fill=white,
+                path fading=blockOptionalGlossFade,
+                opacity=0.70,
+            ]
+                ([xshift=-3.2mm, yshift=0mm]C)
+                rectangle
+                ([xshift=3.2mm, yshift=3.2mm]C);
+            \draw[
+                white,
+                opacity=0.82,
+                line width=0.42pt,
+                line cap=round,
+            ]
+                ([xshift=-1.15mm, yshift=1.30mm]C)
+                --
+                ([xshift=-0.20mm, yshift=1.86mm]C);
+        \end{scope}
+        \path[
+            draw=optionalmarkstarFrame,
+            line width=0.45pt,
+            line join=round,
+        ]
+            \blockOptionalStarPath{C};
+    }%
+}
+
+\newcommand{\blockDrawOptionalMarginMark}{%
+    \ifblockOptional
+        \checkoddpage
+        \ifoddpage
+            \coordinate (blockOptionalLevel) at ([yshift=-5.3mm]frame.north east);
+            \node[
+                anchor=east,
+                inner sep=0pt,
+                outer sep=0pt,
+            ] at ([xshift=\blockOptionalMarkFrameShift]blockOptionalLevel) {\blockOptionalStar};
+        \else
+            \coordinate (blockOptionalLevel) at ([yshift=-5.3mm]frame.north west);
+            \node[
+                anchor=west,
+                inner sep=0pt,
+                outer sep=0pt,
+            ] at ([xshift={-\blockOptionalMarkFrameShift}]blockOptionalLevel) {\blockOptionalStar};
+        \fi
+    \fi
+}
+
+\newcommand{\blockPlaceOptionalMarginMark}{%
+    \checkoddpage
+    \tikz[remember picture, overlay, baseline]{%
+        \coordinate (blockOptionalAnchor) at (0, 0.65ex);
+        \ifoddpage
+            \coordinate (blockOptionalPageEdge) at (current page.east |- blockOptionalAnchor);
+            \node[
+                anchor=east,
+                inner sep=0pt,
+                outer sep=0pt,
+            ] at ([xshift={-\blockOptionalMarkPageInset}]blockOptionalPageEdge) {\blockOptionalStar};
+        \else
+            \coordinate (blockOptionalPageEdge) at (current page.west |- blockOptionalAnchor);
+            \node[
+                anchor=west,
+                inner sep=0pt,
+                outer sep=0pt,
+            ] at ([xshift=\blockOptionalMarkPageInset]blockOptionalPageEdge) {\blockOptionalStar};
+        \fi
+    }%
+}
+
+\newcommand{\blockPrintProofOptionalMark}{%
+    \ifblockOptional
+    \else
+        \ifblockProofOptional
+            \blockPlaceOptionalMarginMark
+        \fi
+    \fi
+}
+
+\newcommand{\blockPrintRemarkOptionalMark}{%
+    \ifblockOptional
+    \else
+        \ifblockRemarkOptional
+            \blockPlaceOptionalMarginMark
+        \fi
+    \fi
+}
+
+\newcommand{\blockProofTitle}{%
+    \ifblockOptional
+        \textbf{Доказательство.}%
+    \else
+        \ifblockProofOptional
+            {\bfseries\color{optionalmarkaccent}Доказательство.}%
+        \else
+            \textbf{Доказательство.}%
+        \fi
+    \fi
+}
+
+\newcommand{\blockRemarkIcon}{%
+    \ifblockOptional
+        \noteicon
+    \else
+        \ifblockRemarkOptional
+            \textcolor{optionalmarkaccent}{\faInfoCircle}\;\,
+        \else
+            \noteicon
+        \fi
+    \fi
+}
+
+
+% =============================================================================
 % НАСТРОЙКА СЧЕТЧИКОВ И СТИЛЯ
 % =============================================================================
+
+% Показывать ли решения и ответы к задачам
+\newif\ifshowtaskdetails
+\showtaskdetailsfalse
 
 \newcounter{commonThmCounter}[section]
 \renewcommand{\thecommonThmCounter}{\thesection.\arabic{commonThmCounter}}
@@ -86,6 +331,8 @@
     enhanced jigsaw,
     breakable,
     enforce breakable,
+    overlay unbroken={\blockDrawOptionalMarginMark},
+    overlay first={\blockDrawOptionalMarginMark},
     colback=white,
     colframe=#1,
     coltext=black,
@@ -129,13 +376,18 @@
 \blockBadgeNamestrue
 
 \newcommand{\blockBadge}[1]{%
+    \ifblockOptional
+        \colorlet{blockBadgeCurrentText}{optionalmarkaccent}%
+    \else
+        \colorlet{blockBadgeCurrentText}{tcbcolframe}%
+    \fi
     \tikz[baseline=(B.base)]
         \node[
             draw=white,
             line width=1pt,
             rounded corners=2.6pt,
             fill=white,
-            text=tcbcolframe,
+            text=blockBadgeCurrentText,
             inner xsep=6pt,
             inner ysep=2.5pt,
             minimum width=2em,
@@ -225,7 +477,7 @@
     title={\blockTitle{\blockName{А}{Алгоритм}}{#2}},
 }
 
-\newtcolorbox[auto counter, number within=chapter]{taskBox}{
+\newtcolorbox{taskBox}[1]{
     enhanced,
     colback=white,
     colframe=white!50!black,
@@ -235,7 +487,8 @@
     before upper={\textbf{\tcbtitle.}\ },
     frame hidden,
     left=0mm, right=0mm, top=1mm, bottom=1mm,
-    title={\thetcbcounter}
+    code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
+    title={\thecommonThmCounter}
 }
 
 
@@ -288,156 +541,191 @@
 % КОМАНДЫ-ОБЕРТКИ
 % =============================================================================
 
-% \defi{Метка}{Термин}{Текст}[Примеры][Замечание]
-\NewDocumentCommand{\defi}{ s m m +m +O{} +O{} }{
+% \defi[Параметры]{Метка}{Термин}{Текст}[Примеры][Замечание]
+\NewDocumentCommand{\defi}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{defiBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{defiBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printExamples{#5}
-            \printRemark{#6}
+            \printExamples{#6}
+            \printRemark{#7}
         \end{defiBoxStar}
     }{%
-        \begin{defiBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{defiBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printExamples{#5}
-            \printRemark{#6}
+            \printExamples{#6}
+            \printRemark{#7}
         \end{defiBox}
     }
+    \endgroup
 }
 
-% \stat{Метка}{Название}{Текст}[Док-во][Замечание]
-\NewDocumentCommand{\stat}{ s m m +m +O{} +O{} }{
+% \stat[Параметры]{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\stat}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{statBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{statBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{statBoxStar}
     }{%
-        \begin{statBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{statBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{statBox}
     }
+    \endgroup
 }
 
-% \lemm{Метка}{Название}{Текст}[Док-во][Замечание]
-\NewDocumentCommand{\lemm}{ s m m +m +O{} +O{} }{
+% \lemm[Параметры]{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\lemm}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{lemmBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{lemmBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{lemmBoxStar}
     }{%
-        \begin{lemmBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{lemmBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{lemmBox}
     }
+    \endgroup
 }
 
-% \theo{Метка}{Название}{Текст}[Док-во][Замечание]
-\NewDocumentCommand{\theo}{ s m m +m +O{} +O{} }{
+% \theo[Параметры]{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\theo}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{theoBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{theoBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{theoBoxStar}
     }{%
-        \begin{theoBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{theoBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{theoBox}
     }
+    \endgroup
 }
 
-% \conc{Метка}{Название}{Текст}[Док-во][Замечание]
-\NewDocumentCommand{\conc}{ s m m +m +O{} +O{} }{
+% \conc[Параметры]{Метка}{Название}{Текст}[Док-во][Замечание]
+\NewDocumentCommand{\conc}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{concBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{concBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{concBoxStar}
     }{%
-        \begin{concBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{concBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printProof{#5}
-            \printRemark{#6}
+            \printProof{#6}
+            \printRemark{#7}
         \end{concBox}
     }
+    \endgroup
 }
 
-% \exam{Метка}{Название}{Текст / Условие}[Решение][Замечание]
-\NewDocumentCommand{\exam}{ s m m +m +O{} +O{} }{
+% \exam[Параметры]{Метка}{Название}{Текст / Условие}[Решение][Замечание]
+\NewDocumentCommand{\exam}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{examBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{examBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printSolution{#5}
-            \printRemark{#6}
+            \printSolution{#6}
+            \printRemark{#7}
         \end{examBoxStar}
     }{%
-        \begin{examBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{examBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printSolution{#5}
-            \printRemark{#6}
+            \printSolution{#6}
+            \printRemark{#7}
         \end{examBox}
     }
+    \endgroup
 }
 
-% \note{Метка}{Название}{Текст}
-\NewDocumentCommand{\note}{ s m m +m }{
+% \note[Параметры]{Метка}{Название}{Текст}
+\NewDocumentCommand{\note}{ s O{} m m +m }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{noteBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{noteBoxStar}{#3}{#4}
+            \blockMainText{#5}
         \end{noteBoxStar}
     }{%
-        \begin{noteBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{noteBox}{#3}{#4}
+            \blockMainText{#5}
         \end{noteBox}
     }
+    \endgroup
 }
 
-% \algo{Метка}{Название}{Описание алгоритма}[Сложность][Замечание]
-\NewDocumentCommand{\algo}{ s m m +m +O{} +O{} }{
+% \algo[Параметры]{Метка}{Название}{Описание алгоритма}[Сложность][Замечание]
+\NewDocumentCommand{\algo}{ s O{} m m +m +O{} +O{} }{
+    \begingroup
+    \blockApplyOptions{#2}
     \IfBooleanTF{#1}{%
-        \begin{algoBoxStar}{#2}{#3}
-            \blockMainText{#4}
+        \begin{algoBoxStar}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printComplexity{#5}
-            \printRemark{#6}
+            \printComplexity{#6}
+            \printRemark{#7}
         \end{algoBoxStar}
     }{%
-        \begin{algoBox}{#2}{#3}
-            \blockMainText{#4}
+        \begin{algoBox}{#3}{#4}
+            \blockMainText{#5}
             \par \normalfont
-            \printComplexity{#5}
-            \printRemark{#6}
+            \printComplexity{#6}
+            \printRemark{#7}
         \end{algoBox}
     }
+    \endgroup
 }
 
-% \task{Текст}
-\NewDocumentCommand{\task}{ +m }{
-    \begin{taskBox}
-        \blockMainText{#1}
+% \task{Метка}{Текст}[Решение][Ответ]
+\NewDocumentCommand{\task}{ m +m +O{} +O{} }{
+    \begin{taskBox}{#1}
+        \setlist[enumerate,1]{
+            label=\textcolor{listL1}{\arabic*.},
+            leftmargin=2.2em,
+            itemsep=0.5em,
+            parsep=0pt,
+            topsep=0.5em,
+        }%
+        \blockMainText{#2}
+        \ifshowtaskdetails
+            \printSolution{#3}
+            \printTaskAnswer{#4}
+        \fi
     \end{taskBox}
 }
 

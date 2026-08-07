@@ -14,6 +14,7 @@
   footskip=13mm,
   heightrounded,
 ]{geometry}
+\usepackage[strict]{changepage}
 
 \raggedbottom
 
@@ -96,6 +97,7 @@
 % =============================================================================
 
 \usepackage{graphicx}
+\usepackage[export]{adjustbox}
 \usepackage{caption}
 \usepackage{subcaption}
 
@@ -112,7 +114,7 @@
 % =============================================================================
 
 \usepackage{indentfirst}
-\usepackage{enumitem}
+\usepackage[inline]{enumitem}
 \usepackage{lua-ul}
 \usepackage{etoolbox}
 \usepackage{fontawesome}
@@ -127,6 +129,7 @@
 % =============================================================================
 
 \usepackage{tikz}
+\usepackage{tikzpagenodes}
 
 \usetikzlibrary{
   calc,
@@ -317,6 +320,7 @@
   \def\emp#1{#1}%
   \def\underLine#1{#1}%
   \def\textcolor#1#2{#2}%
+  \def\blockref#1#2{#1}%
 }
 \urlstyle{same}
 

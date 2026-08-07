@@ -101,15 +101,38 @@
     \end{longtable}%
 }
 
+\newcommand{\blockRefBadge}[1]{%
+    \tikz[baseline=(R.base)]{%
+        \node[
+            rounded corners=1.6pt,
+            draw=blockrefframe,
+            line width=0.35pt,
+            fill=blockrefback,
+            text=blockreftext,
+            inner xsep=3.2pt,
+            inner ysep=0.55pt,
+            outer sep=0pt,
+            anchor=base,
+            font=\sffamily\bfseries\scriptsize,
+        ] (R) {\strut #1};%
+    }%
+}
+
+\DeclareRobustCommand{\bref}[2]{%
+    \leavevmode
+    \hyperref[#2]{%
+        {\sffamily\color{blockreftext}#1}%
+        \nobreak\hspace{0.25em}%
+        \blockRefBadge{\ref*{#2}}%
+    }%
+}
+
 % См. также файл block.tex
 
 
 % =============================================================================
 % ---> Выделение
 
-%\newcommand{\foc}[1]{%
-%  \textcolor{xstone!70!black}{\bfseries\underLine{#1}}%
-%}
 \newcommand{\foc}[1]{%
   \underLine{{\bfseries\color{xstone!70!black}#1}}%
 }
@@ -200,6 +223,8 @@
 
 \newcommand{\nh}[2][\e]{U_{#1}(#2)}             % Окрестность
 \newcommand{\nhp}[2][\e]{\mathring{U}_{#1}(#2)} % Проколотая окрестность
+
+\newcommand{\seq}[1]{\left\{#1\right\}}
 
 \newcommand{\appr}[1]{\xrightarrow[#1]{}}       % Предел со стрелкой
 
