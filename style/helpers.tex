@@ -101,14 +101,14 @@
     \end{longtable}%
 }
 
-\newcommand{\blockRefBadge}[1]{%
+\newcommand{\bLinkBadge}[1]{%
     \tikz[baseline=(R.base)]{%
         \node[
             rounded corners=1.6pt,
-            draw=blockrefframe,
+            draw=blinkframe,
             line width=0.35pt,
-            fill=blockrefback,
-            text=blockreftext,
+            fill=blinkback,
+            text=blinktext,
             inner xsep=3.2pt,
             inner ysep=0.55pt,
             outer sep=0pt,
@@ -118,12 +118,12 @@
     }%
 }
 
-\DeclareRobustCommand{\bref}[2]{%
+\DeclareRobustCommand{\blink}[2]{%
     \leavevmode
     \hyperref[#2]{%
-        {\sffamily\color{blockreftext}#1}%
+        {\color{blinktext}#1}%
         \nobreak\hspace{0.25em}%
-        \blockRefBadge{\ref*{#2}}%
+        \bLinkBadge{\ref*{#2}}%
     }%
 }
 

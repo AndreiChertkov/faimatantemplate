@@ -2,6 +2,7 @@
 
 Возможности:
     * По исходным LaTeX-файлам автоматически формируется карта блоков map.md.
+    * Флаг --map выполняет только формирование карты без сборки документа.
     * По умолчанию выполняется два прохода LuaLaTeX.
     * Перед сборкой локальная папка со стилями (опционально) обновляется из внешнего репозитория.
     * Если внешняя папка со стилями отсутствует, используются локальные стили.
@@ -13,6 +14,7 @@
 Использование:
     python3 build.py
     python3 build.py --clean
+    python3 build.py --map
     python3 build.py --open
     python3 build.py --passes N
     python3 build.py --verbose
@@ -427,6 +429,15 @@ class ContentMapDocument:
     chapters: List[ContentMapChapter] = field(default_factory=list)
 
 
+@dataclass
+class ContentMapLabelWarning:
+    """Предупреждение о некорректной метке блока."""
+
+    source: str
+    line: int
+    message: str
+
+
 class ContentMapError(RuntimeError):
     """Ошибка при построении карты содержания."""
 
@@ -688,6 +699,8 @@ class ContentMapParser:
         self.active_files: List[Path] = []
         self.block_count = 0
 
+        self.label_warnings: List[ContentMapLabelWarning] = []
+
     def parse(self, main_file: Path) -> ContentMapDocument:
         """Разбирает главный файл книги."""
         self._parse_file(main_file.resolve(), document_only=True)
@@ -931,8 +944,10 @@ class ContentMapParser:
         initial_options_allowed = bool(signature["initial_options"])
 
         cursor = skip_whitespace(text, cursor)
+        starred = False
 
         if cursor < len(text) and text[cursor] == "*":
+            starred = True
             cursor += 1
 
         cursor = skip_whitespace(text, cursor)
@@ -980,6 +995,15 @@ class ContentMapParser:
 
         if isinstance(title_index, int):
             title = normalize_tex_text(arguments[title_index])
+
+        self._validate_block_label(
+            command=command,
+            label=label,
+            starred=starred,
+            source_path=source_path,
+            text=text,
+            command_position=command_position,
+        )
 
         block = ContentMapBlock(
             kind=command,
@@ -1076,6 +1100,62 @@ class ContentMapParser:
         else:
             self.document.blocks.append(block)
 
+    def _validate_block_label(
+        self,
+        command: str,
+        label: str,
+        starred: bool,
+        source_path: Path,
+        text: str,
+        command_position: int,
+    ) -> None:
+        """Проверяет соответствие метки типу блока."""
+        line_number = text.count("\n", 0, command_position) + 1
+
+        try:
+            source_name = source_path.relative_to(self.project_dir).as_posix()
+        except ValueError:
+            source_name = str(source_path)
+
+        if starred:
+            if label:
+                self.label_warnings.append(
+                    ContentMapLabelWarning(
+                        source=source_name,
+                        line=line_number,
+                        message=(
+                            f"У звёздного блока \\{command} метка должна быть пустой; "
+                            f"указана метка <<{label}>>."
+                        ),
+                    )
+                )
+
+            return
+
+        expected_pattern = rf"{re.escape(command)}:[^\s]+"
+
+        if re.fullmatch(expected_pattern, label):
+            return
+
+        if not label:
+            message = (
+                f"У блока \\{command} отсутствует метка; "
+                f"ожидается метка вида <<{command}:имя>>."
+            )
+        else:
+            message = (
+                f"Метка блока \\{command} должна иметь вид <<{command}:имя>>; "
+                f"указана метка <<{label}>>."
+            )
+
+        self.label_warnings.append(
+            ContentMapLabelWarning(
+                source=source_name,
+                line=line_number,
+                message=message,
+            )
+        )
+    
     def _raise_parse_error(
         self,
         source_path: Path,
@@ -1122,18 +1202,16 @@ def append_map_block(
     block: ContentMapBlock,
 ) -> None:
     """Добавляет в Markdown-карту описание одного блока."""
-    block_name = block.kind
-
-    if block.optional_mark:
-        block_name += f" [* {block.optional_mark}]"
-
     if block.label:
-        lines.append(f"- {block_name}: {block.label}")
+        lines.append(f"- {block.label}")
     else:
-        lines.append(f"- {block_name}:")
+        lines.append(f"- {block.kind}: [без метки]")
 
     if block.title:
         lines.append(f"    > {block.title}")
+
+    if block.optional_mark:
+        lines.append(f"    > [* {block.optional_mark}]")
 
 
 def render_content_map(document: ContentMapDocument) -> str:
@@ -1189,8 +1267,8 @@ def render_content_map(document: ContentMapDocument) -> str:
     return "\n".join(lines) + "\n"
 
 
-def build_content_map() -> int:
-    """Строит карту содержания и записывает её в map.md."""
+def build_content_map() -> Tuple[int, List[ContentMapLabelWarning]]:
+    """Строит карту содержания и возвращает число блоков и предупреждения о метках."""
     parser = ContentMapParser(PROJECT_DIR)
     document = parser.parse(TEX_PATH)
     content = render_content_map(document)
@@ -1218,7 +1296,65 @@ def build_content_map() -> int:
             f"не удалось записать файл {CONTENT_MAP_PATH}: {error}"
         ) from error
 
-    return parser.block_count
+    return parser.block_count, parser.label_warnings
+
+
+def print_content_map_label_warnings(
+    warnings: List[ContentMapLabelWarning],
+) -> None:
+    """Выводит предупреждения о некорректных метках блоков."""
+    if not warnings:
+        return
+
+    print(
+        c(
+            RED + BOLD,
+            f"  Предупреждения о метках блоков ({len(warnings)}):",
+        )
+    )
+
+    for warning in warnings:
+        print(
+            c(
+                RED,
+                (
+                    f"  ▸ {warning.source}:{warning.line}: "
+                    f"{warning.message}"
+                ),
+            )
+        )
+
+    print()
+
+
+def update_content_map() -> bool:
+    """Формирует карту содержания и выводит сведения о результате."""
+    try:
+        block_count, label_warnings = build_content_map()
+    except ContentMapError as error:
+        print(c(RED + BOLD, "  Не удалось сформировать карту содержания."))
+        print(c(RED, f"  Причина: {error}\n"))
+
+        notify(
+            "LaTeX: ошибка карты содержания",
+            "Не удалось сформировать map.md",
+            success=False,
+        )
+        return False
+
+    print(
+        c(
+            GREEN,
+            (
+                f"  Карта содержания обновлена: "
+                f"{CONTENT_MAP_PATH.relative_to(PROJECT_DIR)} "
+                f"(блоков: {block_count})"
+            ),
+        )
+    )
+    print()
+    print_content_map_label_warnings(label_warnings)
+    return True
 
 
 # =============================================================================
@@ -1836,6 +1972,13 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--map",
+        dest="map_only",
+        action="store_true",
+        help="сформировать карту содержания и завершить работу без сборки",
+    )
+
+    parser.add_argument(
         "--open",
         dest="open_pdf",
         action="store_true",
@@ -1863,7 +2006,7 @@ def parse_arguments() -> argparse.Namespace:
 # =============================================================================
 
 def main() -> int:
-    """Выполняет очистку или сборку книги."""
+    """Выполняет очистку или сборку книги и карты."""
     args = parse_arguments()
 
     if IS_TTY:
@@ -1874,6 +2017,13 @@ def main() -> int:
     # При флаге --clean выполняется только очистка.
     if args.clean:
         clean_aux()
+        return 0
+
+    # При флаге --map выполняется только формирование карты содержания.
+    if args.map_only:
+        if not update_content_map():
+            return 1
+
         return 0
 
     if args.passes < 1:
@@ -1891,30 +2041,8 @@ def main() -> int:
         )
         return 1
 
-    try:
-        block_count = build_content_map()
-    except ContentMapError as error:
-        print(c(RED + BOLD, "  Не удалось сформировать карту содержания."))
-        print(c(RED, f"  Причина: {error}\n"))
-
-        notify(
-            "LaTeX: ошибка карты содержания",
-            "Не удалось сформировать map.md",
-            success=False,
-        )
+    if not update_content_map():
         return 1
-
-    print(
-        c(
-            GREEN,
-            (
-                f"  Карта содержания обновлена: "
-                f"{CONTENT_MAP_PATH.relative_to(PROJECT_DIR)} "
-                f"(блоков: {block_count})"
-            ),
-        )
-    )
-    print()
 
     total_elapsed = 0.0
     warnings: List[LogWarning] = []

@@ -19,6 +19,21 @@
     \noindent
 }
 
+\newcommand{\boxclosingline}{
+    \par\vspace{2.5mm plus 1mm minus 1mm}
+    {\color{black!40}\hrule height 1.4pt}
+}
+
+\newlength{\taskAnswerLabelWidth}
+
+\newcommand{\taskAnswerShortSeparator}{%
+    \par\vspace{3mm plus 1mm minus 1mm}
+    \settowidth{\taskAnswerLabelWidth}{{\sffamily\bfseries Ответ:}}%
+    {\color{taskanswerseparatorcolor}\hrule width \taskAnswerLabelWidth height 1.4pt}
+    \vspace{2.5mm plus 1mm minus 1mm}
+    \noindent
+}
+
 \newcommand{\printRemark}[1]{%
     \if\relax\detokenize{#1}\relax\else
         \boxsepline
@@ -59,12 +74,19 @@
   \fi
 }
 
-\newcommand{\printTaskAnswer}[1]{%
-    \if\relax\detokenize{#1}\relax\else
-        \boxsepline
+\newcommand{\printTaskAnswer}[2]{%
+    \if\relax\detokenize{#1}\relax
+        \if\relax\detokenize{#2}\relax\else
+            \boxclosingline
+        \fi
+    \else
+        \taskAnswerShortSeparator
         \begingroup
             \noindent{\sffamily\bfseries\color{taskanswercolor}Ответ:}\ #1\unskip\par
         \endgroup
+        \if\relax\detokenize{#2}\relax\else
+            \boxclosingline
+        \fi
     \fi
 }
 
@@ -478,17 +500,27 @@
 }
 
 \newtcolorbox{taskBox}[1]{
-    enhanced,
+    enhanced jigsaw,
+    breakable,
+    enforce breakable,
+    parbox=false,
     colback=white,
-    colframe=white!50!black,
+    coltext=black,
     coltitle=black,
-    fonttitle=\bfseries,
-    detach title,
-    before upper={\textbf{\tcbtitle.}\ },
+    fonttitle=\normalfont\bfseries,
     frame hidden,
-    left=0mm, right=0mm, top=1mm, bottom=1mm,
+    boxsep=0mm,
+    left=0mm,
+    right=0mm,
+    top=1mm,
+    bottom=1mm,
+    pad at break*=1mm,
+    before skip=2mm plus 1mm minus 0.5mm,
+    after skip=2mm plus 1mm minus 0.5mm,
+    detach title,
+    before upper={\noindent\tcbtitle.\nobreakspace\ignorespaces},
     code={\refstepcounter{commonThmCounter}\blockSetLabel{#1}},
-    title={\thecommonThmCounter}
+    title={\thecommonThmCounter},
 }
 
 
@@ -724,7 +756,7 @@
         \blockMainText{#2}
         \ifshowtaskdetails
             \printSolution{#3}
-            \printTaskAnswer{#4}
+            \printTaskAnswer{#4}{#3}
         \fi
     \end{taskBox}
 }
