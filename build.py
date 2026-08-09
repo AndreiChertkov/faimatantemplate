@@ -1137,6 +1137,9 @@ class ContentMapParser:
         if re.fullmatch(expected_pattern, label):
             return
 
+        if command == 'task':
+            return
+
         if not label:
             message = (
                 f"У блока \\{command} отсутствует метка; "
