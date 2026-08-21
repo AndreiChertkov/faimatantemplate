@@ -59,6 +59,9 @@ EXTERNAL_STYLE_DIR = Path("../_repo/faimatantemplate/style")
 # Настройки карты содержания
 # =============================================================================
 
+# Максимальная длина автоматически формируемого описания задачи.
+TASK_PREVIEW_MAX_LENGTH = 180
+
 # Заголовок первого уровня в автоматически формируемой карте.
 CONTENT_MAP_TITLE = "Содержание книги"
 
@@ -611,6 +614,122 @@ def read_tex_group(
     raise ValueError("не найдена закрывающая квадратная скобка")
 
 
+def replace_latex_command_with_argument(text: str, command: str, argument_count: int, kept_argument: int) -> str:
+    """Заменяет LaTeX-команду одним из её обязательных аргументов."""
+    pattern = re.compile(rf"\\{re.escape(command)}(?![A-Za-z@])")
+    result: List[str] = []
+    position = 0
+
+    while True:
+        match = pattern.search(text, position)
+
+        if match is None:
+            result.append(text[position:])
+            break
+
+        result.append(text[position:match.start()])
+        cursor = match.end()
+        arguments: List[str] = []
+
+        try:
+            for _ in range(argument_count):
+                argument, cursor = read_tex_group(text, cursor, "{", "}")
+                arguments.append(argument)
+        except ValueError:
+            result.append(text[match.start():match.end()])
+            position = match.end()
+            continue
+
+        result.append(arguments[kept_argument])
+        position = cursor
+
+    return "".join(result)
+
+
+def clean_task_preview_fragment(text: str) -> str:
+    """Преобразует фрагмент условия задачи в компактный текст для карты."""
+    replacements = (
+        ("blink", 2, 0),
+        ("foc", 1, 0),
+        ("emp", 1, 0),
+        ("text", 1, 0),
+        ("mbox", 1, 0),
+    )
+
+    for command, argument_count, kept_argument in replacements:
+        text = replace_latex_command_with_argument(
+            text,
+            command,
+            argument_count,
+            kept_argument,
+        )
+
+    text = re.sub(r"\\label\s*\{[^{}]*\}", " ", text)
+    text = re.sub(r"\\(?:begin|end)\s*\{[^{}]*\}", " ", text)
+    text = re.sub(r"\\item(?:\s*\[[^\]]*\])?", " ", text)
+    text = text.replace(r"\\", " ")
+    text = text.replace("~", " ")
+    return normalize_tex_text(text)
+
+
+def truncate_task_preview(text: str) -> str:
+    """Ограничивает длину описания задачи, не разрывая последнее слово."""
+    if len(text) <= TASK_PREVIEW_MAX_LENGTH:
+        return text
+
+    boundary = text.rfind(" ", 0, TASK_PREVIEW_MAX_LENGTH + 1)
+
+    if boundary <= 0:
+        boundary = TASK_PREVIEW_MAX_LENGTH
+
+    return text[:boundary].rstrip(" ,;:—-") + "…"
+
+
+def extract_task_preview(text: str) -> str:
+    """Извлекает вводную фразу задачи или первый пункт начального списка."""
+    list_begin_pattern = re.compile(
+        r"\\begin\s*\{\s*(?:enumerate|itemize)\s*\}"
+    )
+    item_pattern = re.compile(
+        r"\\item(?:\s*\[[^\]]*\])?"
+    )
+
+    list_match = list_begin_pattern.search(text)
+    candidate = text
+
+    if list_match is not None:
+        introductory_text = clean_task_preview_fragment(
+            text[:list_match.start()]
+        )
+
+        if introductory_text:
+            return truncate_task_preview(introductory_text)
+
+        list_body = text[list_match.end():]
+        first_item = item_pattern.search(list_body)
+
+        if first_item is not None:
+            item_start = first_item.end()
+            next_item = item_pattern.search(list_body, item_start)
+            list_end = re.search(
+                r"\\end\s*\{\s*(?:enumerate|itemize)\s*\}",
+                list_body[item_start:],
+            )
+
+            item_end = len(list_body)
+
+            if next_item is not None:
+                item_end = min(item_end, next_item.start())
+
+            if list_end is not None:
+                item_end = min(item_end, item_start + list_end.start())
+
+            candidate = list_body[item_start:item_end]
+
+    preview = clean_task_preview_fragment(candidate)
+    return truncate_task_preview(preview)
+
+
 def split_top_level_commas(text: str) -> List[str]:
     """Разделяет строку по запятым, находящимся вне фигурных скобок."""
     parts: List[str] = []
@@ -995,6 +1114,8 @@ class ContentMapParser:
 
         if isinstance(title_index, int):
             title = normalize_tex_text(arguments[title_index])
+        elif command == "task":
+            title = extract_task_preview(arguments[1])
 
         self._validate_block_label(
             command=command,
@@ -1207,6 +1328,8 @@ def append_map_block(
     """Добавляет в Markdown-карту описание одного блока."""
     if block.label:
         lines.append(f"- {block.label}")
+    elif block.kind == "task":
+        lines.append("- task")
     else:
         lines.append(f"- {block.kind}: [без метки]")
 
